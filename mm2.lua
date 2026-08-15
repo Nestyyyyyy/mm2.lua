@@ -1,8 +1,9 @@
 -- ══════════════════════════════════════════════════════════════
---  MM2 ULTIMATE v3  —  En Kapsamlı MM2 Script
+--  MM2 ULTIMATE  —  BUILD 4 (rol tespiti sıkılaştırıldı)
 --  loadstring(game:HttpGet("RAW_LINK"))()
 --  INSERT = Menü · DELETE = Panic · END = Watermark · HOME = Küçült
 -- ══════════════════════════════════════════════════════════════
+local BUILD = "BUILD-4"
 
 pcall(function() if _G.__MM2_Destroy then _G.__MM2_Destroy() end end)
 
@@ -589,6 +590,35 @@ end)
 makeButton(secRadarCtrl,"🧠 Rol Hafızasını Temizle",Color3.fromRGB(50,30,60),function()
     clearRoleMemory()
     notify("Hafıza","Roller sıfırlandı, yeniden tespit edilecek","info",4)
+end)
+
+-- TEŞHİS: Hangi oyuncuda ne bulunduğunu tam olarak göster
+makeButton(secRadarCtrl,"🔍 TEŞHİS — Ne Buluyor?",Color3.fromRGB(20,60,60),function()
+    local lines={}
+    for _,p in pairs(Players:GetPlayers()) do
+        local toolNames={}
+        -- Character'daki Tool'lar
+        if p.Character then
+            for _,o in pairs(p.Character:GetChildren()) do
+                if o:IsA("Tool") then table.insert(toolNames,"[el] "..o.Name) end
+            end
+        end
+        -- Backpack'teki Tool'lar
+        local bp=p:FindFirstChild("Backpack")
+        if bp then
+            for _,o in pairs(bp:GetChildren()) do
+                if o:IsA("Tool") then table.insert(toolNames,"[çanta] "..o.Name) end
+            end
+        end
+        local toolStr = #toolNames>0 and table.concat(toolNames,", ") or "SİLAH YOK"
+        local detected = roleMemory[p.Name] or "innocent"
+        local line = p.Name.." → "..detected.."  |  "..toolStr
+        table.insert(lines,line)
+        print("[MM2 TEŞHİS] "..line)
+    end
+    -- Ekranda ilk 3'ünü göster
+    local shown = table.concat(lines,"\n",1,math.min(3,#lines))
+    notify("🔍 Teşhis Sonucu", shown.."\n\n(Tamamı F9 konsolunda)", "info", 12)
 end)
 
 -- ═══ ESP TABU ═══
@@ -1336,5 +1366,5 @@ _G.__MM2_Destroy=function()
     flyCallback(false)
 end
 
-setStatus("MM2 Ultimate v3 yüklendi ✓","ok")
-notify("MM2 Ultimate v3","7 tab · 60+ özellik · INSERT menü · Sekmelere tıkla!","success",8)
+setStatus("MM2 Ultimate "..BUILD.." yüklendi ✓","ok")
+notify("MM2 Ultimate · "..BUILD,"Rol tespiti sıkılaştırıldı. Sorun varsa Bilgi tabında 🔍 TEŞHİS butonuna bas.","success",8)
