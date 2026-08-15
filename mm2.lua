@@ -189,12 +189,20 @@ end
 local GUI=mount(Instance.new("ScreenGui"))
 GUI.Name="MM2Ultimate" GUI.ResetOnSpawn=false GUI.ZIndexBehavior=Enum.ZIndexBehavior.Sibling GUI.DisplayOrder=999
 
-local GlowGui=Instance.new("Frame") GlowGui.Size=UDim2.new(0,600,0,540) GlowGui.Position=UDim2.new(0.5,-300,0.5,-270) GlowGui.BackgroundTransparency=1 GlowGui.ZIndex=0 GlowGui.Parent=GUI
-local GlowImg=Instance.new("ImageLabel") GlowImg.Size=UDim2.new(1,60,1,60) GlowImg.Position=UDim2.new(0,-30,0,-30) GlowImg.BackgroundTransparency=1 GlowImg.Image="rbxassetid://5028857084" GlowImg.ImageColor3=T.Accent GlowImg.ImageTransparency=0.68 GlowImg.ScaleType=Enum.ScaleType.Slice GlowImg.SliceCenter=Rect.new(24,24,276,276) GlowImg.ZIndex=0 GlowImg.Parent=GlowGui
+-- ══════════════════════════════════════════════════════════════
+--  PENCERE BOYUTU — ekrana göre otomatik, ASLA taşmaz
+-- ══════════════════════════════════════════════════════════════
+local screenSize = Camera.ViewportSize
+-- Ekranın en fazla %90'ını kapla, güvenli kenar boşluğu bırak
+local WIN_W = math.floor(math.min(560, screenSize.X * 0.9))
+local WIN_H = math.floor(math.min(520, screenSize.Y * 0.85))
+
+local GlowGui=Instance.new("Frame") GlowGui.Size=UDim2.new(0,WIN_W+30,0,WIN_H+30) GlowGui.Position=UDim2.new(0.5,-(WIN_W+30)/2,0.5,-(WIN_H+30)/2) GlowGui.BackgroundTransparency=1 GlowGui.ZIndex=0 GlowGui.Parent=GUI
+local GlowImg=Instance.new("ImageLabel") GlowImg.Size=UDim2.new(1,60,1,60) GlowImg.Position=UDim2.new(0,-30,0,-30) GlowImg.BackgroundTransparency=1 GlowImg.Image="rbxassetid://5028857084" GlowImg.ImageColor3=T.Accent GlowImg.ImageTransparency=0.85 GlowImg.ScaleType=Enum.ScaleType.Slice GlowImg.SliceCenter=Rect.new(24,24,276,276) GlowImg.ZIndex=0 GlowImg.Parent=GlowGui
 
 local Main=Instance.new("Frame")
-Main.Size=UDim2.new(0,570,0,530) Main.Position=UDim2.new(0.5,-285,0.5,-265)
-Main.BackgroundColor3=T.BG Main.BorderSizePixel=0 Main.Active=true Main.Draggable=true
+Main.Size=UDim2.new(0,WIN_W,0,WIN_H) Main.Position=UDim2.new(0.5,-WIN_W/2,0.5,-WIN_H/2)
+Main.BackgroundColor3=T.BG Main.BorderSizePixel=0 Main.Active=true
 Main.Visible=false Main.ZIndex=1 Main.Parent=GUI
 corner(Main,12) stroke(Main,T.Border,1)
 
@@ -216,10 +224,55 @@ end
 titleBtn(-38,"✕",T.Bad,function() Main.Visible=false GlowGui.Visible=false end)
 local minimized=false
 local ContentWrapper=Instance.new("Frame") ContentWrapper.Size=UDim2.new(1,0,1,-54) ContentWrapper.Position=UDim2.new(0,0,0,54) ContentWrapper.BackgroundTransparency=1 ContentWrapper.ClipsDescendants=true ContentWrapper.Parent=Main
-titleBtn(-72,"—",T.Warn,function()
-    minimized=not minimized
-    tw(Main,{Size=minimized and UDim2.new(0,570,0,54) or UDim2.new(0,570,0,530)},0.4,Enum.EasingStyle.Back)
-end)
+
+-- Küçültme fonksiyonu (hem buton hem HOME tuşu kullanır)
+local doMinimize
+titleBtn(-72,"—",T.Warn,function() doMinimize() end)
+
+-- ══════════════════════════════════════════════════════════════
+--  SINIRLI SÜRÜKLEME — pencere ekran dışına ÇIKAMAZ
+-- ══════════════════════════════════════════════════════════════
+do
+    local dragging=false
+    local dragStart=nil
+    local startPos=nil
+
+    local function clampToScreen(pos)
+        local vs=Camera.ViewportSize
+        local w=Main.AbsoluteSize.X
+        local h=Main.AbsoluteSize.Y
+        -- Piksel cinsinden mutlak konum hesapla
+        local absX=pos.X.Scale*vs.X+pos.X.Offset
+        local absY=pos.Y.Scale*vs.Y+pos.Y.Offset
+        -- Ekran içinde tut (en az 40px görünür kalsın)
+        absX=math.clamp(absX,0,math.max(0,vs.X-w))
+        absY=math.clamp(absY,0,math.max(0,vs.Y-h))
+        return UDim2.new(0,absX,0,absY)
+    end
+
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            dragging=true
+            dragStart=input.Position
+            startPos=Main.Position
+            input.Changed:Connect(function()
+                if input.UserInputState==Enum.UserInputState.End then dragging=false end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if not dragging then return end
+        if input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch then
+            local delta=input.Position-dragStart
+            local newPos=UDim2.new(
+                startPos.X.Scale, startPos.X.Offset+delta.X,
+                startPos.Y.Scale, startPos.Y.Offset+delta.Y
+            )
+            Main.Position=clampToScreen(newPos)
+        end
+    end)
+end
 
 -- Tab bar
 local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,40) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
@@ -237,12 +290,25 @@ local STxt=lbl(StatusBar,"Hazır",11,T.Dim,Enum.Font.Gotham,Enum.TextXAlignment.
 local SRight=lbl(StatusBar,"",11,T.Faint,Enum.Font.GothamMedium,Enum.TextXAlignment.Right,UDim2.new(0.45,0,0,0),UDim2.new(0.55,-12,1,0))
 local function setStatus(txt,kind) STxt.Text=txt local col=kind=="ok" and T.Good or kind=="warn" and T.Warn or kind=="error" and T.Bad or T.Faint tw(SDot,{BackgroundColor3=col}) end
 
+-- Küçültme: içerik + status bar gizlenir, glow da küçülür
+doMinimize=function()
+    minimized=not minimized
+    local targetH = minimized and 54 or WIN_H
+    tw(Main,{Size=UDim2.new(0,WIN_W,0,targetH)},0.35,Enum.EasingStyle.Quint)
+    -- Status bar küçükken görünmesin
+    StatusBar.Visible = not minimized
+    -- Glow da küçülsün (arkada kırmızı iz kalmasın)
+    tw(GlowGui,{Size=UDim2.new(0,WIN_W+30,0,targetH+30)},0.35,Enum.EasingStyle.Quint)
+end
+
 -- ══════════════════════════════════════════════════════════════
 --  TAB & KONTROL ÜRETİCİLER
 -- ══════════════════════════════════════════════════════════════
 local tabs={} local activeTab=nil
 local function makeTab(name,icon)
-    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,68,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
+    -- Tab genişliği pencereye göre otomatik: 7 tab her zaman sığar
+    local tabW = math.floor((WIN_W - 16) / 7) - 1
+    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,tabW,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=WIN_W<480 and 10 or 11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
     local ind=Instance.new("Frame") ind.Size=UDim2.new(0,0,0,2) ind.AnchorPoint=Vector2.new(0.5,1) ind.Position=UDim2.new(0.5,0,1,0) ind.BackgroundColor3=T.Accent ind.BorderSizePixel=0 ind.Parent=btn corner(ind,1)
     local scroll=Instance.new("ScrollingFrame") scroll.Size=UDim2.new(1,0,1,0) scroll.BackgroundTransparency=1 scroll.BorderSizePixel=0 scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=3 scroll.ScrollBarImageColor3=T.Accent scroll.Visible=false scroll.Parent=ContentArea
     local sl=Instance.new("UIListLayout") sl.Padding=UDim.new(0,8) sl.Parent=scroll
@@ -647,6 +713,31 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ══════════════════════════════════════════════════════════════
+--  PENCERE EKRANDA KALSIN
+-- ══════════════════════════════════════════════════════════════
+-- Ekran boyutu değişirse (tam ekran/pencere geçişi) menüyü ortala
+Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    local vs=Camera.ViewportSize
+    -- Pencere ekran dışında kaldıysa ortala
+    local absPos=Main.AbsolutePosition
+    local absSize=Main.AbsoluteSize
+    if absPos.X<0 or absPos.Y<0 or absPos.X+absSize.X>vs.X or absPos.Y+absSize.Y>vs.Y then
+        Main.Position=UDim2.new(0.5,-absSize.X/2,0.5,-absSize.Y/2)
+        GlowGui.Position=UDim2.new(0.5,-(absSize.X+30)/2,0.5,-(absSize.Y+30)/2)
+    end
+end)
+
+-- Glow menüyle birlikte hareket etsin
+Main:GetPropertyChangedSignal("Position"):Connect(function()
+    GlowGui.Position=UDim2.new(
+        Main.Position.X.Scale, Main.Position.X.Offset-15,
+        Main.Position.Y.Scale, Main.Position.Y.Offset-15
+    )
+end)
+-- Not: Glow boyutu doMinimize() içinde yönetilir, burada dinleyici yok
+-- (iki yerden aynı anda değiştirilirse arkada iz kalıyordu)
+
+-- ══════════════════════════════════════════════════════════════
 --  TEMİZLİK & YENİDEN DOĞMA YÖNETİMİ
 -- ══════════════════════════════════════════════════════════════
 
@@ -692,7 +783,18 @@ UserInputService.InputBegan:Connect(function(input,gpe)
     if gpe then return end
     if input.KeyCode==Enum.KeyCode.Insert then
         Main.Visible=not Main.Visible GlowGui.Visible=Main.Visible
-        if Main.Visible then Main.GroupTransparency=1 tw(Main,{GroupTransparency=0},0.3) end
+        if Main.Visible then
+            -- Her açılışta ekran içinde olduğundan emin ol
+            local vs=Camera.ViewportSize
+            local w=Main.AbsoluteSize.X>0 and Main.AbsoluteSize.X or WIN_W
+            local h=Main.AbsoluteSize.Y>0 and Main.AbsoluteSize.Y or WIN_H
+            local ax=Main.Position.X.Scale*vs.X+Main.Position.X.Offset
+            local ay=Main.Position.Y.Scale*vs.Y+Main.Position.Y.Offset
+            if ax<0 or ay<0 or ax+w>vs.X or ay+h>vs.Y then
+                Main.Position=UDim2.new(0.5,-w/2,0.5,-h/2)
+            end
+            Main.GroupTransparency=1 tw(Main,{GroupTransparency=0},0.3)
+        end
     elseif input.KeyCode==Enum.KeyCode.Delete then
         for _,t in pairs(allToggles) do pcall(function() t:set(false) end) end
         flyCallback(false)
@@ -702,8 +804,7 @@ UserInputService.InputBegan:Connect(function(input,gpe)
     elseif input.KeyCode==Enum.KeyCode.End then
         wmFrame.Visible=not wmFrame.Visible
     elseif input.KeyCode==Enum.KeyCode.Home then
-        minimized=not minimized
-        tw(Main,{Size=minimized and UDim2.new(0,570,0,54) or UDim2.new(0,570,0,530)},0.4,Enum.EasingStyle.Back)
+        doMinimize()
     end
 end)
 
