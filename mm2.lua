@@ -223,7 +223,7 @@ end)
 
 -- Tab bar
 local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,40) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
-local TBL=Instance.new("UIListLayout") TBL.FillDirection=Enum.FillDirection.Horizontal TBL.Padding=UDim.new(0,2) TBL.VerticalAlignment=Enum.VerticalAlignment.Center TBL.HorizontalAlignment=Enum.HorizontalAlignment.Center TBL.Parent=TabBar
+local TBL=Instance.new("UIListLayout") TBL.FillDirection=Enum.FillDirection.Horizontal TBL.Padding=UDim.new(0,1) TBL.VerticalAlignment=Enum.VerticalAlignment.Center TBL.HorizontalAlignment=Enum.HorizontalAlignment.Center TBL.Parent=TabBar
 local TBP=Instance.new("UIPadding") TBP.PaddingTop=UDim.new(0,5) TBP.PaddingBottom=UDim.new(0,5) TBP.Parent=TabBar
 local TBUnder=Instance.new("Frame") TBUnder.Size=UDim2.new(1,0,0,1) TBUnder.Position=UDim2.new(0,0,1,-1) TBUnder.BackgroundColor3=T.Border TBUnder.BorderSizePixel=0 TBUnder.Parent=TabBar
 
@@ -242,7 +242,7 @@ local function setStatus(txt,kind) STxt.Text=txt local col=kind=="ok" and T.Good
 -- ══════════════════════════════════════════════════════════════
 local tabs={} local activeTab=nil
 local function makeTab(name,icon)
-    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,84,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=12 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
+    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,68,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
     local ind=Instance.new("Frame") ind.Size=UDim2.new(0,0,0,2) ind.AnchorPoint=Vector2.new(0.5,1) ind.Position=UDim2.new(0.5,0,1,0) ind.BackgroundColor3=T.Accent ind.BorderSizePixel=0 ind.Parent=btn corner(ind,1)
     local scroll=Instance.new("ScrollingFrame") scroll.Size=UDim2.new(1,0,1,0) scroll.BackgroundTransparency=1 scroll.BorderSizePixel=0 scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=3 scroll.ScrollBarImageColor3=T.Accent scroll.Visible=false scroll.Parent=ContentArea
     local sl=Instance.new("UIListLayout") sl.Padding=UDim.new(0,8) sl.Parent=scroll
@@ -603,6 +603,8 @@ local roundStart=tick()
 local tracerLines={}
 local boxFrames={}
 local trailPart=nil
+local noclipWasOn=false
+local roundIdleTime=0
 local allToggles={espMurd,espSher,espInno,espDead,espChams,espTracer,espBox,espDist,espHealth,
     autoAim,autoShoot,aimWall,aimKnife,showFOV,flyTog,speedTog,jumpTog,noclipTog,bhopTog,infJump,
     antiVoid,autoCoin,fullbright,antiAFK,autoWin,chatSpam,rainbow,trailTog,spinTog,radarTog}
@@ -645,6 +647,45 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- ══════════════════════════════════════════════════════════════
+--  TEMİZLİK & YENİDEN DOĞMA YÖNETİMİ
+-- ══════════════════════════════════════════════════════════════
+
+-- Oyuncu ayrılınca ona ait görselleri temizle (hafıza sızıntısı önlenir)
+Players.PlayerRemoving:Connect(function(p)
+    local n=p.Name
+    if tracerLines[n] then pcall(function() tracerLines[n]:Destroy() end) tracerLines[n]=nil end
+    if boxFrames[n] then pcall(function() boxFrames[n]:Destroy() end) boxFrames[n]=nil end
+    if radarDots[n] then pcall(function() radarDots[n].dot:Destroy() end) radarDots[n]=nil end
+    -- Şerif çıktıysa takibi sıfırla
+    if lastSheriffName==n then lastSheriffName=nil end
+end)
+
+-- Yeni oyuncu girince eski artık kalmasın
+Players.PlayerAdded:Connect(function(p)
+    local n=p.Name
+    if tracerLines[n] then pcall(function() tracerLines[n]:Destroy() end) tracerLines[n]=nil end
+    if boxFrames[n] then pcall(function() boxFrames[n]:Destroy() end) boxFrames[n]=nil end
+    if radarDots[n] then pcall(function() radarDots[n].dot:Destroy() end) radarDots[n]=nil end
+end)
+
+-- Kendimiz yeniden doğunca: fly'ı temizle, yeni round algıla
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    -- Fly nesnelerini temizle (eski karaktere bağlıydılar)
+    flyBV=nil flyBG=nil trailPart=nil
+    -- Yeni round başlamış olabilir → şerif takibini ve timer'ı sıfırla
+    task.wait(1)
+    sheriffDropPos=nil
+    lastSheriffName=nil
+    SheriffDropMarker.Visible=false
+    SheriffDropLabel.Visible=false
+    pcall(function() lblSherDrop.set("Henüz düşmedi",T.Faint) end)
+    roundStart=tick()
+    -- Aktif hileleri yeni karaktere tekrar uygula
+    if flyTog:get() then flyCallback(true) end
+    notify("Yeni Round","Şerif takibi sıfırlandı","info",3)
+end)
+
+-- ══════════════════════════════════════════════════════════════
 --  TUŞLAR
 -- ══════════════════════════════════════════════════════════════
 UserInputService.InputBegan:Connect(function(input,gpe)
@@ -667,12 +708,19 @@ UserInputService.InputBegan:Connect(function(input,gpe)
 end)
 
 -- ══════════════════════════════════════════════════════════════
---  ANA DÖNGÜ
+--  ANA DÖNGÜ (optimize edilmiş)
+--  Hafif işler (fly, hız, kamera) her frame çalışır.
+--  Ağır işler (ESP, rol tespiti, radar) saniyede ~10 kez çalışır.
 -- ══════════════════════════════════════════════════════════════
 local fpsCount,fpsAccum,chatTimer=0,0,0
+local heavyTimer=0
+local HEAVY_INTERVAL=0.1  -- saniyede 10 kez ağır işlem
+
+-- Önbellek (her frame yeniden hesaplama)
+local cachedMurderer,cachedSheriff=nil,nil
 
 RunService.Heartbeat:Connect(function(dt)
-    fpsCount=fpsCount+1 fpsAccum=fpsAccum+dt chatTimer=chatTimer+dt
+    fpsCount=fpsCount+1 fpsAccum=fpsAccum+dt chatTimer=chatTimer+dt heavyTimer=heavyTimer+dt
     if fpsAccum>=1 then
         local fps=math.floor(fpsCount/fpsAccum)
         lblFPS.set(fps.." FPS") wmInfo.Text=fps.." FPS"
@@ -683,17 +731,29 @@ RunService.Heartbeat:Connect(function(dt)
     local hum=char:FindFirstChild("Humanoid")
     local root=char:FindFirstChild("HumanoidRootPart")
 
+    -- ─── HER FRAME (hafif, akıcılık için) ───
     if root and root.Position.Y>-50 then safePos=root.Position end
     if antiVoid:get() and root and root.Position.Y<-100 then
         root.CFrame=CFrame.new(safePos+Vector3.new(0,5,0)) notify("Anti-Void","Kurtarıldın!","warn")
     end
 
-    if speedTog:get() and hum then hum.WalkSpeed=speedVal.get() end
-    if jumpTog:get() and hum then hum.JumpPower=jumpVal.get() hum.UseJumpPower=true end
-    if noclipTog:get() then for _,p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end
+    -- Hız: açıkken uygula, kapanınca normale döndür
+    if speedTog:get() and hum then
+        hum.WalkSpeed=speedVal.get()
+    elseif hum and hum.WalkSpeed~=16 and not speedTog:get() then
+        hum.WalkSpeed=16
+    end
+
+    -- Zıplama: açıkken uygula, kapanınca normale döndür
+    if jumpTog:get() and hum then
+        hum.UseJumpPower=true hum.JumpPower=jumpVal.get()
+    elseif hum and hum.UseJumpPower and hum.JumpPower~=50 and not jumpTog:get() then
+        hum.JumpPower=50
+    end
+
     if bhopTog:get() and hum then if hum.FloorMaterial~=Enum.Material.Air then hum.Jump=true end end
 
-    -- Fly
+    -- Fly (her frame — akıcı olmalı)
     if flyTog:get() then
         if not flyBV or not flyBV.Parent then flyCallback(true) end
         if flyBV and flyBG then
@@ -711,6 +771,113 @@ RunService.Heartbeat:Connect(function(dt)
         if flyBV then flyCallback(false) end
     end
 
+    -- ═══ AUTO-AIM (yeniden yazıldı) ═══
+    if autoAim:get() and root then
+        -- 1) Elimizde ne var? Hem tool hem backpack kontrol edilir.
+        local myTool=char:FindFirstChildWhichIsA("Tool")
+        local myTN=myTool and myTool.Name:lower() or ""
+        local hasGun=(myTN:find("gun") or myTN:find("sheriff") or myTN:find("revolver") or myTN:find("pistol")) and true or false
+        local hasKnife=(myTN:find("knife") or myTN:find("blade")) and true or false
+
+        -- 2) Hedef seç. Rol önbelleği boşsa anlık tespit yap (ilk saniyede boş kalmasın)
+        local targetPlayer=nil
+        local wantRole=nil
+        if hasGun then wantRole="murderer"
+        elseif aimKnife:get() and hasKnife then wantRole="sheriff" end
+
+        if wantRole then
+            -- Önce önbellekten dene
+            local cachedName=(wantRole=="murderer") and cachedMurderer or cachedSheriff
+            if cachedName then
+                local cp=Players:FindFirstChild(cachedName)
+                if cp and cp.Character then targetPlayer=cp end
+            end
+            -- Önbellek boşsa/geçersizse anlık tara
+            if not targetPlayer then
+                for _,p in pairs(Players:GetPlayers()) do
+                    if p~=LocalPlayer and p.Character and getPlayerRole(p)==wantRole then targetPlayer=p break end
+                end
+            end
+        end
+
+        -- 3) Hedef geçerli mi? (ölü hedefe nişan alma)
+        if targetPlayer and targetPlayer.Character then
+            local tc=targetPlayer.Character
+            local tHum=tc:FindFirstChildOfClass("Humanoid")
+            local isAlive=tHum and tHum.Health>0
+
+            -- En iyi hedef parçası: Head > UpperTorso > HumanoidRootPart
+            local tr=tc:FindFirstChild("Head") or tc:FindFirstChild("UpperTorso") or tc:FindFirstChild("HumanoidRootPart")
+
+            if isAlive and tr then
+                local sp,onScreen=Camera:WorldToViewportPoint(tr.Position)
+                -- sp.Z>0 kontrolü: hedef kameranın ARKASINDA değilse
+                if onScreen and sp.Z>0 then
+                    local center=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
+                    local diff=Vector2.new(sp.X,sp.Y)-center
+
+                    if diff.Magnitude<=aimFOV.get() then
+                        -- 4) Duvar kontrolü (isteğe bağlı)
+                        local canSee=true
+                        if aimWall:get() then
+                            local rp=RaycastParams.new()
+                            rp.FilterDescendantsInstances={char,tc}   -- hem kendimizi hem hedefi yok say
+                            rp.FilterType=Enum.RaycastFilterType.Exclude
+                            local dir=tr.Position-Camera.CFrame.Position
+                            local res=Workspace:Raycast(Camera.CFrame.Position,dir,rp)
+                            -- Arada BAŞKA bir şey varsa görüş kapalı
+                            if res then canSee=false end
+                        end
+
+                        if canSee then
+                            -- 5) Kamerayı yumuşakça hedefe çevir.
+                            -- Pozisyonu KORUYUP sadece bakış yönünü değiştiriyoruz.
+                            local camPos=Camera.CFrame.Position
+                            local goalCF=CFrame.lookAt(camPos,tr.Position)
+                            local alpha=math.clamp(dt*aimSmooth.get(),0,1)
+                            Camera.CFrame=Camera.CFrame:Lerp(goalCF,alpha)
+
+                            -- 6) Otomatik ateş — çeşitli executor API'lerini dene
+                            if autoShoot:get() and hasGun then
+                                pcall(function()
+                                    if mouse1click then mouse1click()
+                                    elseif mouse1press then mouse1press() task.delay(0.06,function() pcall(mouse1release) end) end
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    FOVFrame.Visible=showFOV:get() and autoAim:get()
+    if FOVFrame.Visible then local fov=aimFOV.get()*2 FOVFrame.Size=UDim2.new(0,fov,0,fov) FOVFrame.Position=UDim2.new(0.5,-fov/2,0.5,-fov/2) end
+
+    -- Round timer (hafif)
+    local rt=tick()-roundStart
+    lblRound.set(string.format("%d:%02d",math.floor(rt/60),math.floor(rt%60)))
+
+    -- ═══════════════════════════════════════════
+    --  AĞIR İŞLER — saniyede ~10 kez (FPS dostu)
+    -- ═══════════════════════════════════════════
+    if heavyTimer<HEAVY_INTERVAL then return end
+    heavyTimer=0
+
+    -- NoClip: açıkken çarpışmayı kapat, kapatılınca GERİ AÇ
+    if noclipTog:get() then
+        noclipWasOn=true
+        for _,p in pairs(char:GetDescendants()) do
+            if p:IsA("BasePart") and p.CanCollide then p.CanCollide=false end
+        end
+    elseif noclipWasOn then
+        -- Sadece bir kez çalışsın, sürekli değil
+        noclipWasOn=false
+        for _,p in pairs(char:GetDescendants()) do
+            if p:IsA("BasePart") and p.Name~="HumanoidRootPart" then p.CanCollide=true end
+        end
+    end
+
     if fullbright:get() then Lighting.Brightness=10 Lighting.FogEnd=1e6 Lighting.ClockTime=14 end
     if rainbow:get() then
         local color=Color3.fromHSV(tick()%5/5,1,1)
@@ -725,7 +892,6 @@ RunService.Heartbeat:Connect(function(dt)
             local a0=Instance.new("Attachment") a0.Position=Vector3.new(0,1,0) a0.Parent=root a0.Name="_ta0"
             local a1=Instance.new("Attachment") a1.Position=Vector3.new(0,-1,0) a1.Parent=root a1.Name="_ta1"
             trailPart.Attachment0=a0 trailPart.Attachment1=a1 trailPart.Lifetime=0.5 trailPart.Parent=root
-            trailPart.Color=ColorSequence.new(T.Accent)
         end
         trailPart.Color=ColorSequence.new(Color3.fromHSV(tick()%3/3,1,1))
     elseif trailPart then trailPart:Destroy() trailPart=nil pcall(function() root._ta0:Destroy() root._ta1:Destroy() end) end
@@ -735,10 +901,6 @@ RunService.Heartbeat:Connect(function(dt)
         chatTimer=0
         pcall(function() chatIdx=chatIdx%#chatMsgs+1 game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(chatMsgs[chatIdx],"All") end)
     end
-
-    -- Round timer
-    local rt=tick()-roundStart
-    lblRound.set(string.format("%d:%02d",math.floor(rt/60),math.floor(rt%60)))
 
     -- ROL TESPİTİ
     local murdName,sherName=nil,nil
@@ -753,13 +915,36 @@ RunService.Heartbeat:Connect(function(dt)
             end
         end
     end
+    cachedMurderer=murdName cachedSheriff=sherName  -- auto-aim için önbellek
+    local myRoleNow=getPlayerRole(LocalPlayer)
 
-    -- Şerif ölünce silah yeri
+    -- ═══ ROUND DEĞİŞİMİ ALGILAMA ═══
+    -- Katil de şerif de yoksa round bitmiş demektir → takibi sıfırla
+    if not murdName and not sherName and myRoleNow=="innocent" then
+        roundIdleTime=roundIdleTime+HEAVY_INTERVAL
+        if roundIdleTime>4 and sheriffDropPos then
+            sheriffDropPos=nil lastSheriffName=nil
+            SheriffDropMarker.Visible=false SheriffDropLabel.Visible=false
+            lblSherDrop.set("Henüz düşmedi",T.Faint)
+            roundStart=tick()
+            notify("Round Bitti","Takip sıfırlandı","info",3)
+        end
+    else
+        roundIdleTime=0
+    end
+
+    -- Kendimiz de şerif olabiliriz — onu da hesaba kat
+    if myRoleNow=="sheriff" then lastSheriffName=LocalPlayer.Name
+    elseif sherName then lastSheriffName=sherName end
+
+    -- Şerif ölünce silah yeri kaydet
+    -- ÖNEMLİ: Ölen kişinin GERÇEKTEN şerif olduğunu doğrula (sadece isim eşleşmesi yeterli değil)
     for _,p in pairs(Players:GetPlayers()) do
-        if p~=LocalPlayer and p.Character then
+        if p.Character then
             local hum2=p.Character:FindFirstChild("Humanoid")
             local pRoot=p.Character:FindFirstChild("HumanoidRootPart")
-            if lastSheriffName==p.Name and hum2 and hum2.Health<=0 and not sheriffDropPos and pRoot then
+            -- Bu oyuncu şerif miydi? (lastSheriffName ile eşleşmeli VE kendisi LocalPlayer olmamalı — kendi silahımızı takip etmiyoruz)
+            if p~=LocalPlayer and lastSheriffName==p.Name and hum2 and hum2.Health<=0 and not sheriffDropPos and pRoot then
                 sheriffDropPos=pRoot.Position
                 SheriffDropMarker.Visible=true SheriffDropLabel.Visible=true SheriffDropLabel.Text="🔫 "..p.Name
                 lblSherDrop.set("📍 "..math.floor(pRoot.Position.X)..","..math.floor(pRoot.Position.Y)..","..math.floor(pRoot.Position.Z),T.Sher)
@@ -767,9 +952,8 @@ RunService.Heartbeat:Connect(function(dt)
             end
         end
     end
-    if sherName then lastSheriffName=sherName end
 
-    local myRole=getPlayerRole(LocalPlayer)
+    local myRole=myRoleNow
     lblMyRole.set(roleText(myRole,false),roleColor(myRole,false))
 
     if murdName and murdName~=detectedMurderer then
@@ -793,7 +977,7 @@ RunService.Heartbeat:Connect(function(dt)
         if myR then SheriffDropLabel.Text="🔫 "..math.floor((sheriffDropPos-myR.Position).Magnitude).." st" end
     end
 
-    -- ESP + Tracer + Box
+    -- ESP + Chams (ağır kısımda)
     for _,line in pairs(tracerLines) do line.Visible=false end
     for _,box in pairs(boxFrames) do box.Visible=false end
     for _,p in pairs(Players:GetPlayers()) do
@@ -847,7 +1031,7 @@ RunService.Heartbeat:Connect(function(dt)
                     for _,part in pairs(p.Character:GetDescendants()) do if part:IsA("BasePart") then local s=part:FindFirstChild("_chams") if s then s:Destroy() end end end
                 end
 
-                -- Tracer & Box (ekranda)
+                -- Tracer & Box
                 local sp,onScreen=Camera:WorldToViewportPoint(pRoot.Position)
                 if onScreen and (espTracer:get() or espBox:get()) then
                     if espTracer:get() then
@@ -872,45 +1056,6 @@ RunService.Heartbeat:Connect(function(dt)
             end
         end
     end
-
-    -- Auto-aim
-    if autoAim:get() and root then
-        local myTool=char:FindFirstChildWhichIsA("Tool")
-        local myTN=myTool and myTool.Name:lower() or ""
-        local hasGun=myTN:find("gun") or myTN:find("sheriff") or myTN:find("revolver")
-        local hasKnife=myTN:find("knife") or myTN:find("blade")
-        local targetName=nil
-        if hasGun and detectedMurderer then targetName=detectedMurderer
-        elseif aimKnife:get() and hasKnife and detectedSheriff then targetName=detectedSheriff end
-        if targetName then
-            local tc=Players:FindFirstChild(targetName) and Players:FindFirstChild(targetName).Character
-            if tc then
-                local tr=tc:FindFirstChild("HumanoidRootPart") or tc:FindFirstChild("UpperTorso")
-                if tr then
-                    local sp,onScreen=Camera:WorldToViewportPoint(tr.Position)
-                    if onScreen then
-                        local center=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
-                        local diff=Vector2.new(sp.X,sp.Y)-center
-                        if diff.Magnitude<=aimFOV.get() then
-                            local canSee=true
-                            if aimWall:get() then
-                                local rp=RaycastParams.new() rp.FilterDescendantsInstances={char} rp.FilterType=Enum.RaycastFilterType.Exclude
-                                local res=Workspace:Raycast(Camera.CFrame.Position,(tr.Position-Camera.CFrame.Position),rp)
-                                if res and res.Instance and not res.Instance:IsDescendantOf(tc) then canSee=false end
-                            end
-                            if canSee then
-                                Camera.CFrame=Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position,tr.Position),dt*aimSmooth.get())
-                                if autoShoot:get() then pcall(function() mouse1press() task.delay(0.08,mouse1release) end) end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    FOVFrame.Visible=showFOV:get() and autoAim:get()
-    if FOVFrame.Visible then local fov=aimFOV.get()*2 FOVFrame.Size=UDim2.new(0,fov,0,fov) FOVFrame.Position=UDim2.new(0.5,-fov/2,0.5,-fov/2) end
 
     -- Auto coin
     if autoCoin:get() then
