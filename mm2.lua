@@ -278,7 +278,8 @@ end
 local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,46) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
 local TBL=Instance.new("UIListLayout") TBL.FillDirection=Enum.FillDirection.Horizontal TBL.Padding=UDim.new(0,2) TBL.VerticalAlignment=Enum.VerticalAlignment.Center TBL.HorizontalAlignment=Enum.HorizontalAlignment.Center TBL.Parent=TabBar
 local TBP=Instance.new("UIPadding") TBP.PaddingTop=UDim.new(0,4) TBP.PaddingBottom=UDim.new(0,4) TBP.PaddingLeft=UDim.new(0,4) TBP.PaddingRight=UDim.new(0,4) TBP.Parent=TabBar
-local TBUnder=Instance.new("Frame") TBUnder.Size=UDim2.new(1,0,0,1) TBUnder.Position=UDim2.new(0,0,1,-1) TBUnder.BackgroundColor3=T.Border TBUnder.BorderSizePixel=0 TBUnder.Parent=TabBar
+-- Alt çizgi: TabBar'ın İÇİNDE OLMAMALI (UIListLayout onu tab sanıp diğerlerini iterdi)
+local TBUnder=Instance.new("Frame") TBUnder.Size=UDim2.new(1,0,0,1) TBUnder.Position=UDim2.new(0,0,0,46) TBUnder.BackgroundColor3=T.Border TBUnder.BorderSizePixel=0 TBUnder.ZIndex=3 TBUnder.Parent=ContentWrapper
 
 local ContentArea=Instance.new("Frame") ContentArea.Size=UDim2.new(1,0,1,-46) ContentArea.Position=UDim2.new(0,0,0,46) ContentArea.BackgroundTransparency=1 ContentArea.ClipsDescendants=true ContentArea.Parent=ContentWrapper
 
@@ -307,7 +308,9 @@ end
 local tabs={} local activeTab=nil
 local function makeTab(name,icon)
     -- Tab genişliği ORANSAL: her tab pencerenin tam 1/7'si → asla taşmaz
-    local btn=Instance.new("TextButton") btn.Size=UDim2.new(1/7,-3,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.."\n"..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=10 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.TextWrapped=true btn.Parent=TabBar corner(btn,6)
+    local btn=Instance.new("TextButton") btn.Size=UDim2.new(1/7,-3,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.."\n"..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.TextWrapped=false btn.TextScaled=false btn.Parent=TabBar corner(btn,6)
+    -- Dar ekranda yazı taşarsa küçült
+    local tc=Instance.new("UITextSizeConstraint") tc.MinTextSize=8 tc.MaxTextSize=11 tc.Parent=btn
     local ind=Instance.new("Frame") ind.Size=UDim2.new(0,0,0,2) ind.AnchorPoint=Vector2.new(0.5,1) ind.Position=UDim2.new(0.5,0,1,0) ind.BackgroundColor3=T.Accent ind.BorderSizePixel=0 ind.Parent=btn corner(ind,1)
     local scroll=Instance.new("ScrollingFrame") scroll.Size=UDim2.new(1,0,1,0) scroll.BackgroundTransparency=1 scroll.BorderSizePixel=0 scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=3 scroll.ScrollBarImageColor3=T.Accent scroll.Visible=false scroll.Parent=ContentArea
     local sl=Instance.new("UIListLayout") sl.Padding=UDim.new(0,8) sl.Parent=scroll
@@ -400,41 +403,100 @@ local function makeLiveLabel(parent,text,valueText,valueColor)
 end
 
 -- ══════════════════════════════════════════════════════════════
---  ROL TESPİT (MM2'ye özel)
+--  ROL TESPİT (MM2'ye özel — hafızalı, geniş tarama)
 -- ══════════════════════════════════════════════════════════════
+
+-- ROL HAFIZASI: Bir kez tespit edilen rol, round bitene kadar hatırlanır.
+-- MM2'de roller round içinde değişmez, bu yüzden şerif silahını
+-- bir kez çekince artık hep bilinir.
+local roleMemory = {}
+local roleNotified = {}
+
+local function clearRoleMemory()
+    roleMemory = {}
+    roleNotified = {}
+end
+
 local function checkToolName(tn)
+    if not tn then return nil end
     tn=tn:lower()
-    if tn=="knife" or tn:find("knife") or tn:find("blade") or tn:find("murder") or tn:find("sword") or tn:find("scythe") or tn:find("dagger") then return "murderer" end
-    if tn=="gun" or tn:find("gun") or tn:find("sheriff") or tn:find("revolver") or tn:find("pistol") or tn:find("hero") then return "sheriff" end
+    -- Katil silahları (önce kontrol edilir)
+    if tn:find("knife") or tn:find("blade") or tn:find("murder") or tn:find("sword")
+       or tn:find("scythe") or tn:find("dagger") or tn:find("machete") then
+        return "murderer"
+    end
+    -- Şerif silahları
+    if tn:find("gun") or tn:find("sheriff") or tn:find("revolver") or tn:find("pistol")
+       or tn:find("hero") or tn:find("holster") or tn:find("weapon2") then
+        return "sheriff"
+    end
     return nil
 end
 
+-- Bir kapsayıcıyı derinlemesine tara
+local function scanContainer(container)
+    if not container then return nil end
+    local ok,result = pcall(function()
+        for _,obj in pairs(container:GetDescendants()) do
+            local r = checkToolName(obj.Name)
+            if r then return r end
+        end
+        return nil
+    end)
+    return ok and result or nil
+end
+
 local function getPlayerRole(player)
-    if not player or not player.Character then return "innocent" end
-    -- Elindeki tool
-    local at=player.Character:FindFirstChildWhichIsA("Tool")
-    if at then local r=checkToolName(at.Name) if r then return r end end
-    -- Backpack (MM2 için en güvenilir)
-    local bp=player:FindFirstChild("Backpack")
-    if bp then
-        for _,item in pairs(bp:GetChildren()) do
-            if item:IsA("Tool") then local r=checkToolName(item.Name) if r then return r end end
+    if not player then return "innocent" end
+    local pname = player.Name
+
+    -- 1) HAFIZADAN OKU — daha önce tespit edildiyse direkt döndür
+    if roleMemory[pname] then return roleMemory[pname] end
+
+    local found = nil
+
+    -- 2) Elindeki tool (silah çekilmişse — en güvenilir)
+    if player.Character then
+        local at = player.Character:FindFirstChildWhichIsA("Tool")
+        if at then found = checkToolName(at.Name) end
+    end
+
+    -- 3) Character'ın TÜM içeriği (kılıf, aksesuar, model, parça dahil)
+    if not found and player.Character then
+        found = scanContainer(player.Character)
+    end
+
+    -- 4) Backpack (kendi çantamız için çalışır)
+    if not found then
+        found = scanContainer(player:FindFirstChild("Backpack"))
+    end
+
+    -- 5) StarterGear (bazı durumlarda replike olur)
+    if not found then
+        found = scanContainer(player:FindFirstChild("StarterGear"))
+    end
+
+    -- 6) leaderstats / rol değişkenleri
+    if not found then
+        local ls = player:FindFirstChild("leaderstats") or player:FindFirstChild("GameStats")
+        if ls then
+            for _,v in pairs(ls:GetChildren()) do
+                local vn = v.Name:lower()
+                if vn:find("role") or vn:find("team") or vn:find("status") then
+                    local rv = tostring(v.Value):lower()
+                    if rv:find("murd") or rv:find("killer") then found="murderer" break
+                    elseif rv:find("sheriff") or rv:find("hero") then found="sheriff" break end
+                end
+            end
         end
     end
-    -- leaderstats
-    local ls=player:FindFirstChild("leaderstats") or player:FindFirstChild("GameStats")
-    if ls then
-        local role=ls:FindFirstChild("Role") or ls:FindFirstChild("Team") or ls:FindFirstChild("Status")
-        if role then
-            local rv=tostring(role.Value):lower()
-            if rv:find("murd") or rv:find("killer") then return "murderer"
-            elseif rv:find("sheriff") or rv:find("hero") then return "sheriff" end
-        end
+
+    -- 7) TESPİT EDİLDİYSE HAFIZAYA YAZ (bir daha kaybolmaz)
+    if found then
+        roleMemory[pname] = found
+        return found
     end
-    -- Character içi
-    for _,obj in pairs(player.Character:GetDescendants()) do
-        if obj:IsA("Tool") or obj:IsA("Model") then local r=checkToolName(obj.Name) if r then return r end end
-    end
+
     return "innocent"
 end
 
@@ -446,6 +508,54 @@ local function roleText(role,isDead)
     if isDead then return "💀 ÖLÜ" end
     return role=="murderer" and "🔪 KATİL" or role=="sheriff" and "🔫 ŞERİF" or "👤 MASUM"
 end
+
+-- ══════════════════════════════════════════════════════════════
+--  ANLIK TESPİT — silah çekildiği AN yakala
+--  (döngüyü beklemeden, kaçırmadan)
+-- ══════════════════════════════════════════════════════════════
+local watchedChars = {}
+
+local function watchPlayer(p)
+    if p == LocalPlayer then return end
+
+    local function hookCharacter(charObj)
+        if not charObj then return end
+        if watchedChars[charObj] then return end
+        watchedChars[charObj] = true
+
+        -- Karaktere yeni bir şey eklenince (silah çekilince) kontrol et
+        charObj.ChildAdded:Connect(function(child)
+            local r = checkToolName(child.Name)
+            if r then
+                roleMemory[p.Name] = r
+                -- Şerif ilk kez tespit edildiyse bildir
+                if r == "sheriff" and not roleNotified[p.Name] then
+                    roleNotified[p.Name] = true
+                    notify("🔫 ŞERİF BULUNDU!", p.Name, "warn", 5)
+                elseif r == "murderer" and not roleNotified[p.Name] then
+                    roleNotified[p.Name] = true
+                    notify("🔪 KATİL BULUNDU!", p.Name, "error", 6)
+                end
+            end
+        end)
+
+        -- Zaten elinde bir şey varsa hemen kontrol et
+        task.spawn(function()
+            task.wait(0.2)
+            for _,child in pairs(charObj:GetChildren()) do
+                local r = checkToolName(child.Name)
+                if r then roleMemory[p.Name] = r break end
+            end
+        end)
+    end
+
+    if p.Character then hookCharacter(p.Character) end
+    p.CharacterAdded:Connect(hookCharacter)
+end
+
+-- Mevcut ve gelecek oyuncuları izle
+for _,p in pairs(Players:GetPlayers()) do pcall(watchPlayer, p) end
+Players.PlayerAdded:Connect(function(p) pcall(watchPlayer, p) end)
 
 -- ══════════════════════════════════════════════════════════════
 --  TABLARI OLUŞTUR (8 tab)
@@ -479,6 +589,10 @@ local radarRange=makeSlider(secRadarCtrl,"Menzil",50,400,150," st",function(v) R
 makeButton(secRadarCtrl,"🔄 Şerif Yerini Sıfırla",Color3.fromRGB(30,30,60),function()
     sheriffDropPos=nil SheriffDropMarker.Visible=false SheriffDropLabel.Visible=false
     lblSherDrop.set("Henüz düşmedi",T.Faint) notify("Radar","Sıfırlandı","info")
+end)
+makeButton(secRadarCtrl,"🧠 Rol Hafızasını Temizle",Color3.fromRGB(50,30,60),function()
+    clearRoleMemory()
+    notify("Hafıza","Roller sıfırlandı, yeniden tespit edilecek","info",4)
 end)
 
 -- ═══ ESP TABU ═══
@@ -764,6 +878,7 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     flyBV=nil flyBG=nil trailPart=nil
     -- Yeni round başlamış olabilir → şerif takibini ve timer'ı sıfırla
     task.wait(1)
+    clearRoleMemory()   -- Yeni round → rol hafızasını temizle
     sheriffDropPos=nil
     lastSheriffName=nil
     SheriffDropMarker.Visible=false
@@ -1019,18 +1134,34 @@ RunService.Heartbeat:Connect(function(dt)
     local myRoleNow=getPlayerRole(LocalPlayer)
 
     -- ═══ ROUND DEĞİŞİMİ ALGILAMA ═══
-    -- Katil de şerif de yoksa round bitmiş demektir → takibi sıfırla
-    if not murdName and not sherName and myRoleNow=="innocent" then
-        roundIdleTime=roundIdleTime+HEAVY_INTERVAL
-        if roundIdleTime>4 and sheriffDropPos then
-            sheriffDropPos=nil lastSheriffName=nil
-            SheriffDropMarker.Visible=false SheriffDropLabel.Visible=false
-            lblSherDrop.set("Henüz düşmedi",T.Faint)
-            roundStart=tick()
-            notify("Round Bitti","Takip sıfırlandı","info",3)
+    -- Hafıza yüzünden roller hep dolu kalır, bu yüzden round bitişini
+    -- "hafızadaki oyuncular hala oyunda mı" ile anlıyoruz.
+    -- (Asıl sıfırlama CharacterAdded'da yapılır — orası daha güvenilir)
+    local memCount=0
+    for _ in pairs(roleMemory) do memCount=memCount+1 end
+    -- Hafızada rol var ama hiçbiri hayatta değilse round bitmiş
+    if memCount>0 then
+        local anyAliveWithRole=false
+        for pname,_ in pairs(roleMemory) do
+            local pp=Players:FindFirstChild(pname)
+            if pp and pp.Character then
+                local ph=pp.Character:FindFirstChildOfClass("Humanoid")
+                if ph and ph.Health>0 then anyAliveWithRole=true break end
+            end
         end
-    else
-        roundIdleTime=0
+        if not anyAliveWithRole then
+            roundIdleTime=roundIdleTime+HEAVY_INTERVAL
+            if roundIdleTime>3 then
+                clearRoleMemory()
+                sheriffDropPos=nil lastSheriffName=nil
+                SheriffDropMarker.Visible=false SheriffDropLabel.Visible=false
+                lblSherDrop.set("Henüz düşmedi",T.Faint)
+                roundStart=tick() roundIdleTime=0
+                notify("Round Bitti","Rol hafızası sıfırlandı","info",3)
+            end
+        else
+            roundIdleTime=0
+        end
     end
 
     -- Kendimiz de şerif olabiliriz — onu da hesaba kat
