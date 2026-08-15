@@ -420,26 +420,28 @@ end
 local function checkToolName(tn)
     if not tn then return nil end
     tn=tn:lower()
-    -- Katil silahları (önce kontrol edilir)
-    if tn:find("knife") or tn:find("blade") or tn:find("murder") or tn:find("sword")
-       or tn:find("scythe") or tn:find("dagger") or tn:find("machete") then
+    -- Katil silahları
+    if tn:find("knife") or tn:find("blade") or tn:find("machete") or tn:find("dagger") then
         return "murderer"
     end
     -- Şerif silahları
-    if tn:find("gun") or tn:find("sheriff") or tn:find("revolver") or tn:find("pistol")
-       or tn:find("hero") or tn:find("holster") or tn:find("weapon2") then
+    if tn:find("gun") or tn:find("revolver") or tn:find("pistol") then
         return "sheriff"
     end
     return nil
 end
 
--- Bir kapsayıcıyı derinlemesine tara
-local function scanContainer(container)
+-- SADECE gerçek Tool nesnelerini tara.
+-- (Karakterin tüm parçalarını taramak yanlış sonuç veriyordu:
+--  MM2'de herkeste bıçak kostümü/aksesuarı var, hepsi katil çıkıyordu)
+local function scanForTools(container)
     if not container then return nil end
     local ok,result = pcall(function()
-        for _,obj in pairs(container:GetDescendants()) do
-            local r = checkToolName(obj.Name)
-            if r then return r end
+        for _,obj in pairs(container:GetChildren()) do
+            if obj:IsA("Tool") then
+                local r = checkToolName(obj.Name)
+                if r then return r end
+            end
         end
         return nil
     end)
@@ -450,48 +452,39 @@ local function getPlayerRole(player)
     if not player then return "innocent" end
     local pname = player.Name
 
-    -- 1) HAFIZADAN OKU — daha önce tespit edildiyse direkt döndür
+    -- 1) HAFIZADAN OKU
     if roleMemory[pname] then return roleMemory[pname] end
 
     local found = nil
 
-    -- 2) Elindeki tool (silah çekilmişse — en güvenilir)
+    -- 2) Elinde tuttuğu Tool (en güvenilir)
     if player.Character then
-        local at = player.Character:FindFirstChildWhichIsA("Tool")
-        if at then found = checkToolName(at.Name) end
+        found = scanForTools(player.Character)
     end
 
-    -- 3) Character'ın TÜM içeriği (kılıf, aksesuar, model, parça dahil)
-    if not found and player.Character then
-        found = scanContainer(player.Character)
-    end
-
-    -- 4) Backpack (kendi çantamız için çalışır)
+    -- 3) Backpack'teki Tool'lar (kendi çantamız için çalışır)
     if not found then
-        found = scanContainer(player:FindFirstChild("Backpack"))
+        found = scanForTools(player:FindFirstChild("Backpack"))
     end
 
-    -- 5) StarterGear (bazı durumlarda replike olur)
-    if not found then
-        found = scanContainer(player:FindFirstChild("StarterGear"))
-    end
-
-    -- 6) leaderstats / rol değişkenleri
+    -- 4) leaderstats / rol değişkenleri
     if not found then
         local ls = player:FindFirstChild("leaderstats") or player:FindFirstChild("GameStats")
         if ls then
             for _,v in pairs(ls:GetChildren()) do
                 local vn = v.Name:lower()
                 if vn:find("role") or vn:find("team") or vn:find("status") then
-                    local rv = tostring(v.Value):lower()
-                    if rv:find("murd") or rv:find("killer") then found="murderer" break
-                    elseif rv:find("sheriff") or rv:find("hero") then found="sheriff" break end
+                    local okv,rv = pcall(function() return tostring(v.Value):lower() end)
+                    if okv and rv then
+                        if rv:find("murd") or rv:find("killer") then found="murderer" break
+                        elseif rv:find("sheriff") or rv:find("hero") then found="sheriff" break end
+                    end
                 end
             end
         end
     end
 
-    -- 7) TESPİT EDİLDİYSE HAFIZAYA YAZ (bir daha kaybolmaz)
+    -- 5) Tespit edildiyse hafızaya yaz
     if found then
         roleMemory[pname] = found
         return found
@@ -523,12 +516,13 @@ local function watchPlayer(p)
         if watchedChars[charObj] then return end
         watchedChars[charObj] = true
 
-        -- Karaktere yeni bir şey eklenince (silah çekilince) kontrol et
+        -- Karaktere yeni bir TOOL eklenince (silah çekilince) kontrol et
         charObj.ChildAdded:Connect(function(child)
+            -- SADECE Tool nesneleri sayılır (aksesuar/kostüm değil)
+            if not child:IsA("Tool") then return end
             local r = checkToolName(child.Name)
             if r then
                 roleMemory[p.Name] = r
-                -- Şerif ilk kez tespit edildiyse bildir
                 if r == "sheriff" and not roleNotified[p.Name] then
                     roleNotified[p.Name] = true
                     notify("🔫 ŞERİF BULUNDU!", p.Name, "warn", 5)
@@ -539,12 +533,14 @@ local function watchPlayer(p)
             end
         end)
 
-        -- Zaten elinde bir şey varsa hemen kontrol et
+        -- Zaten elinde bir Tool varsa hemen kontrol et
         task.spawn(function()
             task.wait(0.2)
             for _,child in pairs(charObj:GetChildren()) do
-                local r = checkToolName(child.Name)
-                if r then roleMemory[p.Name] = r break end
+                if child:IsA("Tool") then
+                    local r = checkToolName(child.Name)
+                    if r then roleMemory[p.Name] = r break end
+                end
             end
         end)
     end
