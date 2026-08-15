@@ -194,8 +194,8 @@ GUI.Name="MM2Ultimate" GUI.ResetOnSpawn=false GUI.ZIndexBehavior=Enum.ZIndexBeha
 -- ══════════════════════════════════════════════════════════════
 local screenSize = Camera.ViewportSize
 -- Ekranın en fazla %90'ını kapla, güvenli kenar boşluğu bırak
-local WIN_W = math.floor(math.min(560, screenSize.X * 0.9))
-local WIN_H = math.floor(math.min(520, screenSize.Y * 0.85))
+local WIN_W = math.floor(math.min(600, screenSize.X * 0.92))
+local WIN_H = math.floor(math.min(560, screenSize.Y * 0.88))
 
 local GlowGui=Instance.new("Frame") GlowGui.Size=UDim2.new(0,WIN_W+30,0,WIN_H+30) GlowGui.Position=UDim2.new(0.5,-(WIN_W+30)/2,0.5,-(WIN_H+30)/2) GlowGui.BackgroundTransparency=1 GlowGui.ZIndex=0 GlowGui.Parent=GUI
 local GlowImg=Instance.new("ImageLabel") GlowImg.Size=UDim2.new(1,60,1,60) GlowImg.Position=UDim2.new(0,-30,0,-30) GlowImg.BackgroundTransparency=1 GlowImg.Image="rbxassetid://5028857084" GlowImg.ImageColor3=T.Accent GlowImg.ImageTransparency=0.85 GlowImg.ScaleType=Enum.ScaleType.Slice GlowImg.SliceCenter=Rect.new(24,24,276,276) GlowImg.ZIndex=0 GlowImg.Parent=GlowGui
@@ -223,7 +223,7 @@ local function titleBtn(x,txt,col,cb)
 end
 titleBtn(-38,"✕",T.Bad,function() Main.Visible=false GlowGui.Visible=false end)
 local minimized=false
-local ContentWrapper=Instance.new("Frame") ContentWrapper.Size=UDim2.new(1,0,1,-54) ContentWrapper.Position=UDim2.new(0,0,0,54) ContentWrapper.BackgroundTransparency=1 ContentWrapper.ClipsDescendants=true ContentWrapper.Parent=Main
+local ContentWrapper=Instance.new("Frame") ContentWrapper.Size=UDim2.new(1,0,1,-54-28) ContentWrapper.Position=UDim2.new(0,0,0,54) ContentWrapper.BackgroundTransparency=1 ContentWrapper.ClipsDescendants=true ContentWrapper.Parent=Main
 
 -- Küçültme fonksiyonu (hem buton hem HOME tuşu kullanır)
 local doMinimize
@@ -275,12 +275,12 @@ do
 end
 
 -- Tab bar
-local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,40) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
-local TBL=Instance.new("UIListLayout") TBL.FillDirection=Enum.FillDirection.Horizontal TBL.Padding=UDim.new(0,1) TBL.VerticalAlignment=Enum.VerticalAlignment.Center TBL.HorizontalAlignment=Enum.HorizontalAlignment.Center TBL.Parent=TabBar
-local TBP=Instance.new("UIPadding") TBP.PaddingTop=UDim.new(0,5) TBP.PaddingBottom=UDim.new(0,5) TBP.Parent=TabBar
+local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,46) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
+local TBL=Instance.new("UIListLayout") TBL.FillDirection=Enum.FillDirection.Horizontal TBL.Padding=UDim.new(0,2) TBL.VerticalAlignment=Enum.VerticalAlignment.Center TBL.HorizontalAlignment=Enum.HorizontalAlignment.Center TBL.Parent=TabBar
+local TBP=Instance.new("UIPadding") TBP.PaddingTop=UDim.new(0,4) TBP.PaddingBottom=UDim.new(0,4) TBP.PaddingLeft=UDim.new(0,4) TBP.PaddingRight=UDim.new(0,4) TBP.Parent=TabBar
 local TBUnder=Instance.new("Frame") TBUnder.Size=UDim2.new(1,0,0,1) TBUnder.Position=UDim2.new(0,0,1,-1) TBUnder.BackgroundColor3=T.Border TBUnder.BorderSizePixel=0 TBUnder.Parent=TabBar
 
-local ContentArea=Instance.new("Frame") ContentArea.Size=UDim2.new(1,0,1,-40) ContentArea.Position=UDim2.new(0,0,0,40) ContentArea.BackgroundTransparency=1 ContentArea.ClipsDescendants=true ContentArea.Parent=ContentWrapper
+local ContentArea=Instance.new("Frame") ContentArea.Size=UDim2.new(1,0,1,-46) ContentArea.Position=UDim2.new(0,0,0,46) ContentArea.BackgroundTransparency=1 ContentArea.ClipsDescendants=true ContentArea.Parent=ContentWrapper
 
 -- Status bar
 local StatusBar=Instance.new("Frame") StatusBar.Size=UDim2.new(1,0,0,28) StatusBar.AnchorPoint=Vector2.new(0,1) StatusBar.Position=UDim2.new(0,0,1,0) StatusBar.BackgroundColor3=Color3.fromRGB(14,14,17) StatusBar.BorderSizePixel=0 StatusBar.ZIndex=5 StatusBar.Parent=Main
@@ -306,9 +306,8 @@ end
 -- ══════════════════════════════════════════════════════════════
 local tabs={} local activeTab=nil
 local function makeTab(name,icon)
-    -- Tab genişliği pencereye göre otomatik: 7 tab her zaman sığar
-    local tabW = math.floor((WIN_W - 16) / 7) - 1
-    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,tabW,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=WIN_W<480 and 10 or 11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
+    -- Tab genişliği ORANSAL: her tab pencerenin tam 1/7'si → asla taşmaz
+    local btn=Instance.new("TextButton") btn.Size=UDim2.new(1/7,-3,1,0) btn.BackgroundColor3=T.Surface btn.BackgroundTransparency=1 btn.Text=icon.."\n"..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=10 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.TextWrapped=true btn.Parent=TabBar corner(btn,6)
     local ind=Instance.new("Frame") ind.Size=UDim2.new(0,0,0,2) ind.AnchorPoint=Vector2.new(0.5,1) ind.Position=UDim2.new(0.5,0,1,0) ind.BackgroundColor3=T.Accent ind.BorderSizePixel=0 ind.Parent=btn corner(ind,1)
     local scroll=Instance.new("ScrollingFrame") scroll.Size=UDim2.new(1,0,1,0) scroll.BackgroundTransparency=1 scroll.BorderSizePixel=0 scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=3 scroll.ScrollBarImageColor3=T.Accent scroll.Visible=false scroll.Parent=ContentArea
     local sl=Instance.new("UIListLayout") sl.Padding=UDim.new(0,8) sl.Parent=scroll
