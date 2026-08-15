@@ -1,5 +1,7 @@
--- MM2 Ultimate Script
+-- ============================================================
+-- MM2 ULTIMATE v2 — Full Feature Script
 -- loadstring(game:HttpGet("RAW_LINK"))()
+-- ============================================================
 
 pcall(function() if _G.__MM2_Destroy then _G.__MM2_Destroy() end end)
 
@@ -7,9 +9,13 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- ============================================================
+-- TEMA
+-- ============================================================
 local T = {
     BG=Color3.fromRGB(10,10,13),Surface=Color3.fromRGB(18,18,22),SurfaceHi=Color3.fromRGB(26,26,32),
     Accent=Color3.fromRGB(214,40,56),AccentDark=Color3.fromRGB(140,20,35),
@@ -45,9 +51,21 @@ local function clearOld(n)
     pcall(function() if typeof(gethui)=="function" then local o=gethui():FindFirstChild(n) if o then o:Destroy() end end end)
 end
 
-clearOld("MM2Ultimate") clearOld("MM2Notify") clearOld("MM2FOV") clearOld("MM2Radar")
+clearOld("MM2Ultimate") clearOld("MM2Notify") clearOld("MM2FOV") clearOld("MM2Radar") clearOld("MM2Watermark")
 
+-- ============================================================
+-- WATERMARK (üst köşe)
+-- ============================================================
+local WM=mount(Instance.new("ScreenGui"))
+WM.Name="MM2Watermark" WM.ResetOnSpawn=false WM.DisplayOrder=996
+local wmFrame=Instance.new("Frame") wmFrame.Size=UDim2.new(0,220,0,32) wmFrame.Position=UDim2.new(0,10,0,10) wmFrame.BackgroundColor3=T.Surface wmFrame.BackgroundTransparency=0.1 wmFrame.BorderSizePixel=0 wmFrame.Parent=WM corner(wmFrame,8) stroke(wmFrame,T.Accent,1)
+local wmBar=Instance.new("Frame") wmBar.Size=UDim2.new(0,3,1,-10) wmBar.Position=UDim2.new(0,0,0,5) wmBar.BackgroundColor3=T.Accent wmBar.BorderSizePixel=0 wmBar.Parent=wmFrame corner(wmBar,2)
+local wmTxt=lbl(wmFrame,"🔪 MM2 Ultimate v2",12,T.Text,Enum.Font.GothamBold,Enum.TextXAlignment.Left,UDim2.new(0,12,0,0),UDim2.new(0.6,0,1,0))
+local wmInfo=lbl(wmFrame,"",10,T.Dim,Enum.Font.GothamMedium,Enum.TextXAlignment.Right,UDim2.new(0.6,0,0,0),UDim2.new(0.4,-8,1,0))
+
+-- ============================================================
 -- BİLDİRİM
+-- ============================================================
 local NotifyGui=mount(Instance.new("ScreenGui"))
 NotifyGui.Name="MM2Notify" NotifyGui.ResetOnSpawn=false NotifyGui.DisplayOrder=1001
 local NH=Instance.new("Frame") NH.Size=UDim2.new(0,300,1,-20) NH.Position=UDim2.new(1,-314,0,10) NH.BackgroundTransparency=1 NH.Parent=NotifyGui
@@ -80,7 +98,9 @@ local function notify(title,text,kind,dur)
     task.delay(dur,dismiss)
 end
 
+-- ============================================================
 -- RADAR
+-- ============================================================
 local RadarGui=mount(Instance.new("ScreenGui"))
 RadarGui.Name="MM2Radar" RadarGui.ResetOnSpawn=false RadarGui.DisplayOrder=997
 local RadarFrame=Instance.new("Frame")
@@ -88,26 +108,23 @@ RadarFrame.Size=UDim2.new(0,180,0,180) RadarFrame.Position=UDim2.new(1,-194,1,-1
 RadarFrame.BackgroundColor3=Color3.fromRGB(10,10,13) RadarFrame.BackgroundTransparency=0.2
 RadarFrame.BorderSizePixel=0 RadarFrame.Visible=false RadarFrame.Parent=RadarGui
 corner(RadarFrame,90) stroke(RadarFrame,T.Accent,2)
+lbl(RadarFrame,"📡 RADAR",11,T.Accent,Enum.Font.GothamBold,Enum.TextXAlignment.Center,UDim2.new(0,0,0,-24),UDim2.new(1,0,0,20))
 
-local RadarTitle=Instance.new("TextLabel") RadarTitle.Size=UDim2.new(1,0,0,20) RadarTitle.Position=UDim2.new(0,0,0,-24) RadarTitle.BackgroundTransparency=1 RadarTitle.Text="📡 RADAR" RadarTitle.TextColor3=T.Accent RadarTitle.Font=Enum.Font.GothamBold RadarTitle.TextSize=11 RadarTitle.Parent=RadarFrame
-
-local function makeGridLine(horiz)
+local function gridLine(h)
     local f=Instance.new("Frame") f.BackgroundColor3=Color3.fromRGB(35,35,45) f.BorderSizePixel=0
-    if horiz then f.Size=UDim2.new(1,0,0,1) f.Position=UDim2.new(0,0,0.5,0)
-    else f.Size=UDim2.new(0,1,1,0) f.Position=UDim2.new(0.5,0,0,0) end
+    if h then f.Size=UDim2.new(1,0,0,1) f.Position=UDim2.new(0,0,0.5,0) else f.Size=UDim2.new(0,1,1,0) f.Position=UDim2.new(0.5,0,0,0) end
     f.Parent=RadarFrame
 end
-makeGridLine(true) makeGridLine(false)
+gridLine(true) gridLine(false)
 
 local RadarCenter=Instance.new("Frame") RadarCenter.Size=UDim2.new(0,8,0,8) RadarCenter.AnchorPoint=Vector2.new(0.5,0.5) RadarCenter.Position=UDim2.new(0.5,0,0.5,0) RadarCenter.BackgroundColor3=T.Good RadarCenter.BorderSizePixel=0 RadarCenter.ZIndex=3 RadarCenter.Parent=RadarFrame corner(RadarCenter,4)
 
 local SheriffDropMarker=Instance.new("Frame") SheriffDropMarker.Size=UDim2.new(0,14,0,14) SheriffDropMarker.AnchorPoint=Vector2.new(0.5,0.5) SheriffDropMarker.BackgroundColor3=T.Sher SheriffDropMarker.BorderSizePixel=0 SheriffDropMarker.ZIndex=4 SheriffDropMarker.Visible=false SheriffDropMarker.Parent=RadarFrame corner(SheriffDropMarker,3)
 lbl(SheriffDropMarker,"🔫",10,T.Text,Enum.Font.GothamBold,Enum.TextXAlignment.Center)
-
 local SheriffDropLabel=Instance.new("TextLabel") SheriffDropLabel.Size=UDim2.new(0,80,0,16) SheriffDropLabel.AnchorPoint=Vector2.new(0.5,0) SheriffDropLabel.BackgroundColor3=Color3.fromRGB(10,10,13) SheriffDropLabel.BackgroundTransparency=0.3 SheriffDropLabel.BorderSizePixel=0 SheriffDropLabel.Text="" SheriffDropLabel.TextColor3=T.Sher SheriffDropLabel.Font=Enum.Font.GothamBold SheriffDropLabel.TextSize=9 SheriffDropLabel.ZIndex=5 SheriffDropLabel.Visible=false SheriffDropLabel.Parent=RadarFrame corner(SheriffDropLabel,4)
 
 local radarDots={}
-local function getOrCreateDot(name)
+local function getDot(name)
     if not radarDots[name] then
         local dot=Instance.new("Frame") dot.Size=UDim2.new(0,10,0,10) dot.AnchorPoint=Vector2.new(0.5,0.5) dot.BorderSizePixel=0 dot.ZIndex=2 dot.Parent=RadarFrame corner(dot,5)
         local dtxt=Instance.new("TextLabel") dtxt.Size=UDim2.new(0,60,0,12) dtxt.AnchorPoint=Vector2.new(0.5,1) dtxt.Position=UDim2.new(0.5,0,0,-1) dtxt.BackgroundTransparency=1 dtxt.Font=Enum.Font.GothamBold dtxt.TextSize=8 dtxt.ZIndex=3 dtxt.Parent=dot
@@ -120,28 +137,25 @@ local sheriffDropPos=nil
 local lastSheriffName=nil
 local RADAR_RANGE=150
 
-local function worldToRadar(worldPos)
-    local myChar=LocalPlayer.Character
-    local myRoot=myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
-    local diff=worldPos-myRoot.Position
-    local forward=myRoot.CFrame.LookVector
-    local right=myRoot.CFrame.RightVector
-    local x=diff:Dot(right) local z=diff:Dot(forward)
-    local nx=math.clamp(x/RADAR_RANGE,-1,1)*0.45+0.5
-    local ny=math.clamp(-z/RADAR_RANGE,-1,1)*0.45+0.5
-    return nx,ny
+local function worldToRadar(wp)
+    local mc=LocalPlayer.Character local mr=mc and mc:FindFirstChild("HumanoidRootPart")
+    if not mr then return nil end
+    local diff=wp-mr.Position
+    local x=diff:Dot(mr.CFrame.RightVector) local z=diff:Dot(mr.CFrame.LookVector)
+    return math.clamp(x/RADAR_RANGE,-1,1)*0.45+0.5, math.clamp(-z/RADAR_RANGE,-1,1)*0.45+0.5
 end
 
+-- ============================================================
 -- ANA GUI
+-- ============================================================
 local GUI=mount(Instance.new("ScreenGui"))
 GUI.Name="MM2Ultimate" GUI.ResetOnSpawn=false GUI.ZIndexBehavior=Enum.ZIndexBehavior.Sibling GUI.DisplayOrder=999
 
-local GlowGui=Instance.new("Frame") GlowGui.Size=UDim2.new(0,570,0,510) GlowGui.Position=UDim2.new(0.5,-285,0.5,-255) GlowGui.BackgroundTransparency=1 GlowGui.ZIndex=0 GlowGui.Parent=GUI
+local GlowGui=Instance.new("Frame") GlowGui.Size=UDim2.new(0,590,0,530) GlowGui.Position=UDim2.new(0.5,-295,0.5,-265) GlowGui.BackgroundTransparency=1 GlowGui.ZIndex=0 GlowGui.Parent=GUI
 local GlowImg=Instance.new("ImageLabel") GlowImg.Size=UDim2.new(1,60,1,60) GlowImg.Position=UDim2.new(0,-30,0,-30) GlowImg.BackgroundTransparency=1 GlowImg.Image="rbxassetid://5028857084" GlowImg.ImageColor3=T.Accent GlowImg.ImageTransparency=0.7 GlowImg.ScaleType=Enum.ScaleType.Slice GlowImg.SliceCenter=Rect.new(24,24,276,276) GlowImg.ZIndex=0 GlowImg.Parent=GlowGui
 
 local Main=Instance.new("Frame")
-Main.Size=UDim2.new(0,540,0,500) Main.Position=UDim2.new(0.5,-270,0.5,-250)
+Main.Size=UDim2.new(0,560,0,520) Main.Position=UDim2.new(0.5,-280,0.5,-260)
 Main.BackgroundColor3=T.BG Main.BorderSizePixel=0 Main.Active=true Main.Draggable=true
 Main.Visible=false Main.ZIndex=1 Main.Parent=GUI
 corner(Main,12) stroke(Main,T.Border,1)
@@ -151,8 +165,8 @@ local TFix=Instance.new("Frame") TFix.Size=UDim2.new(1,0,0.5,0) TFix.Position=UD
 local TG=Instance.new("UIGradient") TG.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(90,15,20)),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(30,15,18)),ColorSequenceKeypoint.new(1,T.Surface)}) TG.Parent=TitleBar
 local TU=Instance.new("Frame") TU.Size=UDim2.new(1,0,0,1) TU.Position=UDim2.new(0,0,1,-1) TU.BackgroundColor3=T.Accent TU.BorderSizePixel=0 TU.Parent=TitleBar
 local TM=Instance.new("Frame") TM.Size=UDim2.new(0,4,0,20) TM.Position=UDim2.new(0,14,0.5,-10) TM.BackgroundColor3=T.Accent TM.BorderSizePixel=0 TM.Parent=TitleBar corner(TM,2)
-lbl(TitleBar,"🔪  MM2 Ultimate",15,T.Text,Enum.Font.GothamBold,Enum.TextXAlignment.Left,UDim2.new(0,26,0,9),UDim2.new(0.7,0,0,20))
-lbl(TitleBar,"INSERT aç/kapat  ·  DELETE panic  ·  Radar sağ alt",10,T.Faint,Enum.Font.Gotham,Enum.TextXAlignment.Left,UDim2.new(0,26,0,30),UDim2.new(0.7,0,0,14))
+lbl(TitleBar,"🔪  MM2 Ultimate v2",15,T.Text,Enum.Font.GothamBold,Enum.TextXAlignment.Left,UDim2.new(0,26,0,9),UDim2.new(0.7,0,0,20))
+lbl(TitleBar,"INSERT aç/kapat · DELETE panic · END watermark gizle",10,T.Faint,Enum.Font.Gotham,Enum.TextXAlignment.Left,UDim2.new(0,26,0,30),UDim2.new(0.7,0,0,14))
 
 local function titleBtn(x,txt,col,cb)
     local b=Instance.new("TextButton") b.Size=UDim2.new(0,28,0,28) b.Position=UDim2.new(1,x,0.5,-14) b.BackgroundColor3=col b.BackgroundTransparency=0.5 b.Text=txt b.TextColor3=T.Text b.Font=Enum.Font.GothamBold b.TextSize=13 b.BorderSizePixel=0 b.Parent=TitleBar corner(b,7)
@@ -160,15 +174,13 @@ local function titleBtn(x,txt,col,cb)
     b.MouseLeave:Connect(function() tw(b,{BackgroundTransparency=0.5}) end)
     b.MouseButton1Click:Connect(cb) return b
 end
-
 titleBtn(-38,"✕",T.Bad,function() Main.Visible=false GlowGui.Visible=false end)
 
 local minimized=false
 local ContentWrapper=Instance.new("Frame") ContentWrapper.Size=UDim2.new(1,0,1,-52) ContentWrapper.Position=UDim2.new(0,0,0,52) ContentWrapper.BackgroundTransparency=1 ContentWrapper.ClipsDescendants=true ContentWrapper.Parent=Main
-
 titleBtn(-72,"—",T.Warn,function()
     minimized=not minimized
-    tw(Main,{Size=minimized and UDim2.new(0,540,0,52) or UDim2.new(0,540,0,500)},0.4,Enum.EasingStyle.Back)
+    tw(Main,{Size=minimized and UDim2.new(0,560,0,52) or UDim2.new(0,560,0,520)},0.4,Enum.EasingStyle.Back)
 end)
 
 local TabBar=Instance.new("Frame") TabBar.Size=UDim2.new(1,0,0,38) TabBar.BackgroundColor3=Color3.fromRGB(14,14,17) TabBar.BorderSizePixel=0 TabBar.Parent=ContentWrapper
@@ -183,17 +195,14 @@ local SBL=Instance.new("Frame") SBL.Size=UDim2.new(1,0,0,1) SBL.BackgroundColor3
 local SDot=Instance.new("Frame") SDot.Size=UDim2.new(0,6,0,6) SDot.Position=UDim2.new(0,12,0.5,-3) SDot.BackgroundColor3=T.Good SDot.BorderSizePixel=0 SDot.Parent=StatusBar corner(SDot,3)
 local STxt=lbl(StatusBar,"Hazır",11,T.Dim,Enum.Font.Gotham,Enum.TextXAlignment.Left,UDim2.new(0,26,0,0),UDim2.new(0.6,0,1,0))
 local SRight=lbl(StatusBar,"",11,T.Faint,Enum.Font.GothamMedium,Enum.TextXAlignment.Right,UDim2.new(0.4,0,0,0),UDim2.new(0.6,-12,1,0))
+local function setStatus(txt,kind) STxt.Text=txt local col=kind=="ok" and T.Good or kind=="warn" and T.Warn or kind=="error" and T.Bad or T.Faint tw(SDot,{BackgroundColor3=col}) end
 
-local function setStatus(txt,kind)
-    STxt.Text=txt
-    local col=kind=="ok" and T.Good or kind=="warn" and T.Warn or kind=="error" and T.Bad or T.Faint
-    tw(SDot,{BackgroundColor3=col})
-end
-
+-- ============================================================
 -- TAB SİSTEMİ
+-- ============================================================
 local tabs={} local activeTab=nil
 local function makeTab(name,icon)
-    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,82,1,0) btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
+    local btn=Instance.new("TextButton") btn.Size=UDim2.new(0,80,1,0) btn.BackgroundTransparency=1 btn.Text=icon.." "..name btn.TextColor3=T.Faint btn.Font=Enum.Font.GothamMedium btn.TextSize=11 btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=TabBar corner(btn,6)
     local ind=Instance.new("Frame") ind.Size=UDim2.new(0,0,0,2) ind.AnchorPoint=Vector2.new(0.5,1) ind.Position=UDim2.new(0.5,0,1,0) ind.BackgroundColor3=T.Accent ind.BorderSizePixel=0 ind.Parent=btn
     local scroll=Instance.new("ScrollingFrame") scroll.Size=UDim2.new(1,0,1,0) scroll.BackgroundTransparency=1 scroll.BorderSizePixel=0 scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=3 scroll.ScrollBarImageColor3=T.Accent scroll.Visible=false scroll.Parent=ContentArea
     local sl=Instance.new("UIListLayout") sl.Padding=UDim.new(0,6) sl.Parent=scroll
@@ -210,7 +219,6 @@ local function makeTab(name,icon)
     return tab
 end
 
--- KONTROL ÜRETİCİLER
 local function makeSection(tab,title,icon)
     local card=Instance.new("Frame") card.Size=UDim2.new(1,0,0,0) card.AutomaticSize=Enum.AutomaticSize.Y card.BackgroundColor3=T.Surface card.BorderSizePixel=0 card.Parent=tab.scroll corner(card,10) stroke(card,T.Border,1)
     local cl=Instance.new("UIListLayout") cl.Padding=UDim.new(0,4) cl.Parent=card
@@ -284,18 +292,20 @@ local function makeLiveLabel(parent,text,valueText,valueColor)
     return{set=function(txt,col) val.Text=tostring(txt) if col then val.TextColor3=col end end}
 end
 
+-- ============================================================
 -- ROL TESPİT
+-- ============================================================
 local function getPlayerRole(player)
     if not player or not player.Character then return "innocent" end
-    local activeTool=player.Character:FindFirstChildWhichIsA("Tool")
-    if activeTool then
-        local tn=activeTool.Name:lower()
+    local at=player.Character:FindFirstChildWhichIsA("Tool")
+    if at then
+        local tn=at.Name:lower()
         if tn:find("knife") or tn:find("blade") or tn:find("murder") or tn:find("sword") then return "murderer"
         elseif tn:find("gun") or tn:find("sheriff") or tn:find("revolver") or tn:find("pistol") then return "sheriff" end
     end
-    local backpack=player:FindFirstChild("Backpack")
-    if backpack then
-        for _,item in pairs(backpack:GetChildren()) do
+    local bp=player:FindFirstChild("Backpack")
+    if bp then
+        for _,item in pairs(bp:GetChildren()) do
             if item:IsA("Tool") then
                 local tn=item.Name:lower()
                 if tn:find("knife") or tn:find("blade") or tn:find("murder") then return "murderer"
@@ -320,7 +330,9 @@ local function getPlayerRole(player)
     return "innocent"
 end
 
+-- ============================================================
 -- TABLAR
+-- ============================================================
 local tInfo=makeTab("Bilgi","📊")
 local tESP=makeTab("ESP","👁")
 local tAim=makeTab("Aim","🎯")
@@ -328,7 +340,7 @@ local tMove=makeTab("Hareket","🏃")
 local tWeap=makeTab("Silah","⚔️")
 local tGame=makeTab("Oyun","🎮")
 
--- BİLGİ TABU
+-- BİLGİ
 local secRoles=makeSection(tInfo,"Rol Bilgisi","🎭")
 local lblMurd=makeLiveLabel(secRoles,"🔪 Katil","Tespit ediliyor...",T.Murd)
 local lblSher=makeLiveLabel(secRoles,"🔫 Şerif","Tespit ediliyor...",T.Sher)
@@ -336,73 +348,75 @@ local lblMyRole=makeLiveLabel(secRoles,"👤 Senin Rolün","?",T.Text)
 local lblSherDrop=makeLiveLabel(secRoles,"📍 Şerif Silah Yeri","Henüz düşmedi",T.Sher)
 
 local secStats=makeSection(tInfo,"İstatistikler","📈")
-local lblPlayers=makeLiveLabel(secStats,"Oyuncu Sayısı","0")
+local lblPlayers=makeLiveLabel(secStats,"Oyuncu","0")
 local lblAlive=makeLiveLabel(secStats,"Hayatta","0")
 local lblDead=makeLiveLabel(secStats,"Ölü","0")
 local lblPing=makeLiveLabel(secStats,"Ping","?")
 local lblFPS=makeLiveLabel(secStats,"FPS","?")
+local lblRound=makeLiveLabel(secStats,"Round Süresi","0:00")
 
 local secRadarCtrl=makeSection(tInfo,"Radar","📡")
 local radarTog=makeToggle(secRadarCtrl,"Radar Göster","Sağ altta mini harita")
-local radarRange=makeSlider(secRadarCtrl,"Radar Menzili",50,400,150," st",function(v) RADAR_RANGE=v end)
-makeButton(secRadarCtrl,"🔄 Şerif Silah Yerini Sıfırla",Color3.fromRGB(30,30,60),function()
+local radarRange=makeSlider(secRadarCtrl,"Menzil",50,400,150," st",function(v) RADAR_RANGE=v end)
+makeButton(secRadarCtrl,"🔄 Şerif Yerini Sıfırla",Color3.fromRGB(30,30,60),function()
     sheriffDropPos=nil SheriffDropMarker.Visible=false SheriffDropLabel.Visible=false
-    lblSherDrop.set("Henüz düşmedi",T.Faint)
-    notify("Radar","Şerif silah yeri sıfırlandı","info")
+    lblSherDrop.set("Henüz düşmedi",T.Faint) notify("Radar","Sıfırlandı","info")
 end)
 
--- ESP TABU
+-- ESP
 local secESP=makeSection(tESP,"ESP","👁")
 local espMurd=makeToggle(secESP,"Katil ESP","Kırmızı — backpack dahil")
 local espSher=makeToggle(secESP,"Şerif ESP","Sarı — backpack dahil")
 local espInno=makeToggle(secESP,"Masum ESP","Mavi")
 local espDead=makeToggle(secESP,"Ölü ESP","Hayaletler")
 local espChams=makeToggle(secESP,"Chams","Duvardan renk")
+local espTracer=makeToggle(secESP,"Tracer","Oyunculara çizgi")
 local espDist=makeToggle(secESP,"Mesafe Göster")
+local espHealth=makeToggle(secESP,"Can Göster","HP bilgisi")
 
--- AIM TABU
+-- Tracer GUI
+local TracerGui=mount(Instance.new("ScreenGui"))
+TracerGui.Name="MM2FOV" TracerGui.ResetOnSpawn=false TracerGui.DisplayOrder=995
+
+-- AIM
 local secAim=makeSection(tAim,"Aimbot","🎯")
 local autoAim=makeToggle(secAim,"Auto-Aim","Şerif silahıyla katile nişan")
 local autoShoot=makeToggle(secAim,"Auto-Shoot","Otomatik ateş")
+local aimWall=makeToggle(secAim,"Duvar Kontrolü","Sadece görünürse nişan al")
 local showFOV=makeToggle(secAim,"FOV Dairesi")
 local aimSmooth=makeSlider(secAim,"Pürüzsüzlük",1,20,8,"x",function() end)
-local aimFOV=makeSlider(secAim,"FOV (px)",20,400,100,"px",function() end)
+local aimFOV=makeSlider(secAim,"FOV",20,400,100,"px",function() end)
 
-local FOVGUI=mount(Instance.new("ScreenGui"))
-FOVGUI.Name="MM2FOV" FOVGUI.ResetOnSpawn=false FOVGUI.DisplayOrder=998
-local FOVFrame=Instance.new("Frame") FOVFrame.BackgroundTransparency=1 FOVFrame.Size=UDim2.new(0,200,0,200) FOVFrame.Position=UDim2.new(0.5,-100,0.5,-100) FOVFrame.Parent=FOVGUI FOVFrame.Visible=false
+local FOVFrame=Instance.new("Frame") FOVFrame.BackgroundTransparency=1 FOVFrame.Size=UDim2.new(0,200,0,200) FOVFrame.Position=UDim2.new(0.5,-100,0.5,-100) FOVFrame.Parent=TracerGui FOVFrame.Visible=false
 local FOVImg=Instance.new("ImageLabel") FOVImg.Size=UDim2.new(1,0,1,0) FOVImg.BackgroundTransparency=1 FOVImg.Image="rbxassetid://3570695787" FOVImg.ImageColor3=T.Accent FOVImg.ImageTransparency=0.5 FOVImg.Parent=FOVFrame
 
--- HAREKET TABU
+-- HAREKET
 local secFly=makeSection(tMove,"Uçuş","✈️")
 local flyTog=makeToggle(secFly,"Uçma","WASD + Space/Shift")
 local flySpeed=makeSlider(secFly,"Uçuş Hızı",10,200,60," sp",function() end)
 local secWalk=makeSection(tMove,"Yürüyüş","🏃")
 local speedTog=makeToggle(secWalk,"Hız Hilesi")
 local speedVal=makeSlider(secWalk,"Hız",16,200,60," sp",function() end)
+local jumpTog=makeToggle(secWalk,"Yüksek Zıplama")
+local jumpVal=makeSlider(secWalk,"Zıplama Gücü",50,300,50," ",function() end)
 local noclipTog=makeToggle(secWalk,"NoClip","Duvarlardan geç")
 local bhopTog=makeToggle(secWalk,"BunnyHop")
 local secTP=makeSection(tMove,"Işınlanma","📍")
-
 makeButton(secTP,"📍 Katile Işınlan",T.AccentDark,function()
     for _,p in pairs(Players:GetPlayers()) do
-        if p~=LocalPlayer and p.Character then
-            if getPlayerRole(p)=="murderer" then
-                local r=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local t=p.Character:FindFirstChild("HumanoidRootPart")
-                if r and t then r.CFrame=t.CFrame+Vector3.new(5,0,0) notify("Işınlandı","Katile: "..p.Name,"warn") end
-            end
+        if p~=LocalPlayer and p.Character and getPlayerRole(p)=="murderer" then
+            local r=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local t=p.Character:FindFirstChild("HumanoidRootPart")
+            if r and t then r.CFrame=t.CFrame+Vector3.new(5,0,0) notify("Işınlandı","Katile: "..p.Name,"warn") end
         end
     end
 end)
 makeButton(secTP,"📍 Şerife Işınlan",Color3.fromRGB(100,70,0),function()
     for _,p in pairs(Players:GetPlayers()) do
-        if p~=LocalPlayer and p.Character then
-            if getPlayerRole(p)=="sheriff" then
-                local r=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                local t=p.Character:FindFirstChild("HumanoidRootPart")
-                if r and t then r.CFrame=t.CFrame+Vector3.new(5,0,0) notify("Işınlandı","Şerife: "..p.Name,"info") end
-            end
+        if p~=LocalPlayer and p.Character and getPlayerRole(p)=="sheriff" then
+            local r=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local t=p.Character:FindFirstChild("HumanoidRootPart")
+            if r and t then r.CFrame=t.CFrame+Vector3.new(5,0,0) notify("Işınlandı","Şerife: "..p.Name,"info") end
         end
     end
 end)
@@ -417,11 +431,10 @@ makeButton(secTP,"🏠 Spawn'a Dön",Color3.fromRGB(20,50,20),function()
     if r then r.CFrame=CFrame.new(0,5,0) end
 end)
 
--- SİLAH TABU
+-- SİLAH
 local secFakeW=makeSection(tWeap,"Görsel Silahlar","⚔️")
 lbl(secFakeW,"Sadece sen görebilirsin",11,T.Faint,Enum.Font.Gotham,Enum.TextXAlignment.Left,UDim2.new(0,0,0,0),UDim2.new(1,0,0,20))
 local fakeWeapons={}
-
 local function makeFake(color,size,neon)
     if fakeWeapons.active then pcall(function() fakeWeapons.active:Destroy() end) end
     local char=LocalPlayer.Character if not char then return end
@@ -431,14 +444,25 @@ local function makeFake(color,size,neon)
     local w=Instance.new("WeldConstraint") w.Part0=b w.Part1=hand w.Parent=b b.CFrame=hand.CFrame*CFrame.new(0,-0.5,-0.2)
     fakeWeapons.active=m
 end
-
 makeButton(secFakeW,"🗡 Standart Bıçak",T.AccentDark,function() makeFake(Color3.fromRGB(200,200,215)) notify("Silah","Standart bıçak","success") end)
 makeButton(secFakeW,"✨ Altın Bıçak",Color3.fromRGB(100,70,0),function() makeFake(Color3.fromRGB(255,200,0),nil,true) notify("Silah","Altın bıçak","success") end)
 makeButton(secFakeW,"💎 Kristal Bıçak",Color3.fromRGB(0,50,100),function() makeFake(Color3.fromRGB(100,200,255),nil,true) notify("Silah","Kristal bıçak","success") end)
 makeButton(secFakeW,"🟣 Mor Bıçak",Color3.fromRGB(60,0,100),function() makeFake(Color3.fromRGB(180,50,255),nil,true) notify("Silah","Mor bıçak","success") end)
 makeButton(secFakeW,"🔴 Kırmızı Bıçak",T.AccentDark,function() makeFake(Color3.fromRGB(255,30,30),nil,true) notify("Silah","Kırmızı bıçak","success") end)
+makeButton(secFakeW,"🌈 Gökkuşağı Bıçak",Color3.fromRGB(80,80,80),function()
+    makeFake(Color3.fromRGB(255,255,255))
+    if fakeWeapons.active then
+        local part=fakeWeapons.active:FindFirstChildWhichIsA("Part")
+        if part then
+            part.Material=Enum.Material.Neon
+            fakeWeapons.rainbow=part
+        end
+    end
+    notify("Silah","Gökkuşağı bıçak","success")
+end)
 makeButton(secFakeW,"🔫 Şerif Silahı",Color3.fromRGB(30,30,50),function()
     if fakeWeapons.active then pcall(function() fakeWeapons.active:Destroy() end) end
+    fakeWeapons.rainbow=nil
     local char=LocalPlayer.Character if not char then return end
     local hand=char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") if not hand then return end
     local m=Instance.new("Model") m.Parent=workspace
@@ -450,37 +474,58 @@ makeButton(secFakeW,"🔫 Şerif Silahı",Color3.fromRGB(30,30,50),function()
 end)
 makeButton(secFakeW,"❌ Kaldır",Color3.fromRGB(40,15,15),function()
     if fakeWeapons.active then fakeWeapons.active:Destroy() fakeWeapons.active=nil end
-    notify("Silah","Kaldırıldı","info")
+    fakeWeapons.rainbow=nil notify("Silah","Kaldırıldı","info")
 end)
 
--- OYUN TABU
+-- OYUN
 local secGameOpts=makeSection(tGame,"Oyun","🎮")
 local antiVoid=makeToggle(secGameOpts,"Anti-Void","Void'den kurtarır")
 local autoCoin=makeToggle(secGameOpts,"Auto Coin","Altın topla")
 local fullbright=makeToggle(secGameOpts,"Fullbright","Karanlığı kaldır")
-local rainbow=makeToggle(secGameOpts,"Gökkuşağı","Renk değişimi")
+local rainbow=makeToggle(secGameOpts,"Gökkuşağı Karakter","Renk değişimi")
 local chatSpam=makeToggle(secGameOpts,"Chat Spam","Otomatik mesaj")
+local antiAFK=makeToggle(secGameOpts,"Anti-AFK","AFK atılmayı engelle")
 local chatMsgs={"gg","ez","nice","lol","xd"}
 local chatIdx=1
-
 makeButton(secGameOpts,"💰 Altına Işınlan",T.AccentDark,function()
-    local myChar=LocalPlayer.Character local myRoot=myChar and myChar:FindFirstChild("HumanoidRootPart") if not myRoot then return end
-    local closest,closestDist=nil,math.huge
+    local mc=LocalPlayer.Character local mr=mc and mc:FindFirstChild("HumanoidRootPart") if not mr then return end
+    local closest,cd=nil,math.huge
     for _,obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name:lower():find("coin") or obj.Name:lower():find("gold")) then
-            local dist=(obj.Position-myRoot.Position).Magnitude if dist<closestDist then closest=obj closestDist=dist end
+            local d=(obj.Position-mr.Position).Magnitude if d<cd then closest=obj cd=d end
         end
     end
-    if closest then myRoot.CFrame=CFrame.new(closest.Position+Vector3.new(0,3,0)) notify("Altın","Işınlandın!","success")
+    if closest then mr.CFrame=CFrame.new(closest.Position+Vector3.new(0,3,0)) notify("Altın","Işınlandın!","success")
     else notify("Altın","Bulunamadı","warn") end
 end)
 
+local secVisual=makeSection(tGame,"Görünüm","🎨")
+makeButton(secVisual,"🔵 Karakteri Mavi Yap",Color3.fromRGB(20,50,100),function()
+    local char=LocalPlayer.Character if not char then return end
+    for _,p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.Color=Color3.fromRGB(50,120,255) end) end end
+    notify("Görünüm","Mavi","info")
+end)
+makeButton(secVisual,"🔴 Karakteri Kırmızı Yap",Color3.fromRGB(100,20,20),function()
+    local char=LocalPlayer.Character if not char then return end
+    for _,p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.Color=Color3.fromRGB(255,50,50) end) end end
+    notify("Görünüm","Kırmızı","info")
+end)
+makeButton(secVisual,"✨ Neon Karakter",Color3.fromRGB(60,60,100),function()
+    local char=LocalPlayer.Character if not char then return end
+    for _,p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.Material=Enum.Material.Neon end) end end
+    notify("Görünüm","Neon","info")
+end)
+
+-- ============================================================
 -- DEĞİŞKENLER
+-- ============================================================
 local flyBV,flyBG=nil,nil
 local safePos=Vector3.new(0,5,0)
 local detectedMurderer,detectedSheriff=nil,nil
 local lastMurdNotify=0
-local allToggles={espMurd,espSher,espInno,espDead,espChams,espDist,autoAim,autoShoot,showFOV,flyTog,speedTog,noclipTog,bhopTog,antiVoid,autoCoin,fullbright,rainbow,radarTog,chatSpam}
+local roundStart=tick()
+local tracerLines={}
+local allToggles={espMurd,espSher,espInno,espDead,espChams,espTracer,espDist,espHealth,autoAim,autoShoot,aimWall,showFOV,flyTog,speedTog,jumpTog,noclipTog,bhopTog,antiVoid,autoCoin,fullbright,rainbow,chatSpam,antiAFK,radarTog}
 
 local function flyCallback(on)
     local char=LocalPlayer.Character if not char then return end
@@ -496,7 +541,16 @@ local function flyCallback(on)
     end
 end
 
--- INSERT / DELETE
+-- Anti-AFK
+LocalPlayer.Idled:Connect(function()
+    if antiAFK:get() then
+        local vu=game:GetService("VirtualUser")
+        vu:CaptureController()
+        vu:ClickButton2(Vector2.new())
+    end
+end)
+
+-- INSERT / DELETE / END
 UserInputService.InputBegan:Connect(function(input,gpe)
     if gpe then return end
     if input.KeyCode==Enum.KeyCode.Insert then
@@ -507,18 +561,27 @@ UserInputService.InputBegan:Connect(function(input,gpe)
         for _,t in pairs(allToggles) do pcall(function() t:set(false) end) end
         flyCallback(false)
         if fakeWeapons.active then fakeWeapons.active:Destroy() fakeWeapons.active=nil end
-        game:GetService("Lighting").Brightness=1
-        notify("PANIC","Tüm hileler kapatıldı!","error")
-        setStatus("Panic","warn")
+        fakeWeapons.rainbow=nil Lighting.Brightness=1
+        notify("PANIC","Tüm hileler kapatıldı!","error") setStatus("Panic","warn")
+    end
+    if input.KeyCode==Enum.KeyCode.End then
+        wmFrame.Visible=not wmFrame.Visible
     end
 end)
 
+-- ============================================================
 -- ANA DÖNGÜ
+-- ============================================================
 local fpsCount,fpsAccum,chatTimer=0,0,0
 
 RunService.Heartbeat:Connect(function(dt)
     fpsCount+=1 fpsAccum+=dt chatTimer+=dt
-    if fpsAccum>=1 then lblFPS.set(math.floor(fpsCount/fpsAccum).." FPS") fpsCount=0 fpsAccum=0 end
+    if fpsAccum>=1 then
+        local fps=math.floor(fpsCount/fpsAccum)
+        lblFPS.set(fps.." FPS")
+        wmInfo.Text=fps.." FPS"
+        fpsCount=0 fpsAccum=0
+    end
 
     local char=LocalPlayer.Character if not char then return end
     local hum=char:FindFirstChild("Humanoid")
@@ -530,6 +593,7 @@ RunService.Heartbeat:Connect(function(dt)
     end
 
     if speedTog:get() and hum then hum.WalkSpeed=speedVal.get() end
+    if jumpTog:get() and hum then hum.JumpPower=jumpVal.get() hum.UseJumpPower=true end
     if noclipTog:get() then for _,p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end
     if bhopTog:get() and hum then if hum.FloorMaterial~=Enum.Material.Air then hum.Jump=true end end
 
@@ -550,10 +614,13 @@ RunService.Heartbeat:Connect(function(dt)
         if flyBV then flyCallback(false) end
     end
 
-    if fullbright:get() then game:GetService("Lighting").Brightness=10 game:GetService("Lighting").FogEnd=1e6 end
+    if fullbright:get() then Lighting.Brightness=10 Lighting.FogEnd=1e6 end
     if rainbow:get() then
         local color=Color3.fromHSV(tick()%5/5,1,1)
         for _,p in pairs(char:GetDescendants()) do pcall(function() if p:IsA("BasePart") then p.Color=color end end) end
+    end
+    if fakeWeapons.rainbow then
+        fakeWeapons.rainbow.Color=Color3.fromHSV(tick()%2/2,1,1)
     end
 
     if chatSpam:get() and chatTimer>3 then
@@ -564,44 +631,41 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
+    -- Round timer
+    local rt=tick()-roundStart
+    lblRound.set(string.format("%d:%02d",math.floor(rt/60),math.floor(rt%60)))
+
     -- ROL TESPİTİ
     local murdName,sherName=nil,nil
     local aliveCount,deadCount=0,0
-
     for _,p in pairs(Players:GetPlayers()) do
         if p.Character then
             local hum2=p.Character:FindFirstChild("Humanoid")
             if hum2 then if hum2.Health>0 then aliveCount+=1 else deadCount+=1 end end
             if p~=LocalPlayer then
                 local role=getPlayerRole(p)
-                if role=="murderer" then murdName=p.Name
-                elseif role=="sheriff" then sherName=p.Name end
+                if role=="murderer" then murdName=p.Name elseif role=="sheriff" then sherName=p.Name end
             end
         end
     end
 
-    -- Şerif ölünce silah yeri kaydet
+    -- Şerif ölünce silah yeri
     for _,p in pairs(Players:GetPlayers()) do
         if p~=LocalPlayer and p.Character then
             local hum2=p.Character:FindFirstChild("Humanoid")
             local pRoot=p.Character:FindFirstChild("HumanoidRootPart")
-            local wasSheriff=lastSheriffName==p.Name
-            if wasSheriff and hum2 and hum2.Health<=0 and not sheriffDropPos and pRoot then
+            if lastSheriffName==p.Name and hum2 and hum2.Health<=0 and not sheriffDropPos and pRoot then
                 sheriffDropPos=pRoot.Position
-                SheriffDropMarker.Visible=true SheriffDropLabel.Visible=true
-                SheriffDropLabel.Text="🔫 "..p.Name
+                SheriffDropMarker.Visible=true SheriffDropLabel.Visible=true SheriffDropLabel.Text="🔫 "..p.Name
                 lblSherDrop.set("📍 "..math.floor(pRoot.Position.X)..","..math.floor(pRoot.Position.Y)..","..math.floor(pRoot.Position.Z),T.Sher)
                 notify("⚠️ ŞERİF ÖLDÜ!",p.Name.."'nin silahı burada!","warn",8)
             end
         end
     end
-
     if sherName then lastSheriffName=sherName end
 
     local myRole=getPlayerRole(LocalPlayer)
-    local myRoleText=myRole=="murderer" and "🔪 KATİL" or myRole=="sheriff" and "🔫 ŞERİF" or "👤 MASUM"
-    local myRoleColor=myRole=="murderer" and T.Murd or myRole=="sheriff" and T.Sher or T.Inno
-    lblMyRole.set(myRoleText,myRoleColor)
+    lblMyRole.set(myRole=="murderer" and "🔪 KATİL" or myRole=="sheriff" and "🔫 ŞERİF" or "👤 MASUM", myRole=="murderer" and T.Murd or myRole=="sheriff" and T.Sher or T.Inno)
 
     if murdName and murdName~=detectedMurderer then
         detectedMurderer=murdName
@@ -613,23 +677,19 @@ RunService.Heartbeat:Connect(function(dt)
     lblMurd.set(detectedMurderer or "Bilinmiyor",detectedMurderer and T.Murd or T.Faint)
     lblSher.set(detectedSheriff or "Bilinmiyor",detectedSheriff and T.Sher or T.Faint)
     lblPlayers.set(#Players:GetPlayers()) lblAlive.set(aliveCount,T.Good) lblDead.set(deadCount,T.Bad)
-
     pcall(function()
         local ping=game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
         lblPing.set(math.floor(ping).."ms",ping<80 and T.Good or ping<150 and T.Warn or T.Bad)
     end)
-
     SRight.Text=aliveCount.." hayatta"..(detectedMurderer and " · 🔪 "..detectedMurderer or "")
 
     if sheriffDropPos then
-        local myR=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if myR then
-            local dist=math.floor((sheriffDropPos-myR.Position).Magnitude)
-            SheriffDropLabel.Text="🔫 "..dist.." st uzakta"
-        end
+        local myR=char:FindFirstChild("HumanoidRootPart")
+        if myR then SheriffDropLabel.Text="🔫 "..math.floor((sheriffDropPos-myR.Position).Magnitude).." st" end
     end
 
-    -- ESP
+    -- ESP + Tracer
+    for _,line in pairs(tracerLines) do line.Visible=false end
     for _,p in pairs(Players:GetPlayers()) do
         if p~=LocalPlayer and p.Character then
             local pRoot=p.Character:FindFirstChild("HumanoidRootPart")
@@ -638,48 +698,67 @@ RunService.Heartbeat:Connect(function(dt)
                 local pHum=p.Character:FindFirstChild("Humanoid")
                 local isDead=pHum and pHum.Health<=0
                 local showESP=(role=="murderer" and espMurd:get()) or (role=="sheriff" and espSher:get()) or (role=="innocent" and espInno:get()) or (isDead and espDead:get())
+                local color=role=="murderer" and T.Murd or role=="sheriff" and T.Sher or isDead and T.Faint or T.Inno
                 local bb=pRoot:FindFirstChild("_mm2esp")
 
                 if showESP then
                     if not bb then
-                        bb=Instance.new("BillboardGui") bb.Name="_mm2esp" bb.Size=UDim2.new(0,150,0,60) bb.StudsOffset=Vector3.new(0,4.5,0) bb.AlwaysOnTop=true bb.Parent=pRoot
+                        bb=Instance.new("BillboardGui") bb.Name="_mm2esp" bb.Size=UDim2.new(0,150,0,70) bb.StudsOffset=Vector3.new(0,4.5,0) bb.AlwaysOnTop=true bb.Parent=pRoot
                         local bg=Instance.new("Frame") bg.Name="BG" bg.Size=UDim2.new(1,0,1,0) bg.BackgroundColor3=Color3.fromRGB(10,10,13) bg.BackgroundTransparency=0.3 bg.BorderSizePixel=0 bg.Parent=bb corner(bg,6)
-                        local nl2=Instance.new("TextLabel") nl2.Name="NL" nl2.Size=UDim2.new(1,-10,0,22) nl2.Position=UDim2.new(0,5,0,4) nl2.BackgroundTransparency=1 nl2.Font=Enum.Font.GothamBold nl2.TextSize=14 nl2.TextStrokeTransparency=0 nl2.TextXAlignment=Enum.TextXAlignment.Left nl2.Parent=bg
-                        local rl2=Instance.new("TextLabel") rl2.Name="RL" rl2.Size=UDim2.new(1,-10,0,14) rl2.Position=UDim2.new(0,5,0,26) rl2.BackgroundTransparency=1 rl2.Font=Enum.Font.GothamBold rl2.TextSize=11 rl2.TextStrokeTransparency=0 rl2.TextXAlignment=Enum.TextXAlignment.Left rl2.Parent=bg
-                        local dl2=Instance.new("TextLabel") dl2.Name="DL" dl2.Size=UDim2.new(1,-10,0,12) dl2.Position=UDim2.new(0,5,0,42) dl2.BackgroundTransparency=1 dl2.Font=Enum.Font.Gotham dl2.TextSize=10 dl2.TextStrokeTransparency=0.3 dl2.TextXAlignment=Enum.TextXAlignment.Left dl2.Parent=bg
+                        local nl2=Instance.new("TextLabel") nl2.Name="NL" nl2.Size=UDim2.new(1,-10,0,20) nl2.Position=UDim2.new(0,5,0,3) nl2.BackgroundTransparency=1 nl2.Font=Enum.Font.GothamBold nl2.TextSize=14 nl2.TextStrokeTransparency=0 nl2.TextXAlignment=Enum.TextXAlignment.Left nl2.Parent=bg
+                        local rl2=Instance.new("TextLabel") rl2.Name="RL" rl2.Size=UDim2.new(1,-10,0,13) rl2.Position=UDim2.new(0,5,0,23) rl2.BackgroundTransparency=1 rl2.Font=Enum.Font.GothamBold rl2.TextSize=11 rl2.TextStrokeTransparency=0 rl2.TextXAlignment=Enum.TextXAlignment.Left rl2.Parent=bg
+                        local hl2=Instance.new("TextLabel") hl2.Name="HL" hl2.Size=UDim2.new(1,-10,0,12) hl2.Position=UDim2.new(0,5,0,37) hl2.BackgroundTransparency=1 hl2.Font=Enum.Font.Gotham hl2.TextSize=10 hl2.TextStrokeTransparency=0.3 hl2.TextXAlignment=Enum.TextXAlignment.Left hl2.Parent=bg
+                        local dl2=Instance.new("TextLabel") dl2.Name="DL" dl2.Size=UDim2.new(1,-10,0,12) dl2.Position=UDim2.new(0,5,0,50) dl2.BackgroundTransparency=1 dl2.Font=Enum.Font.Gotham dl2.TextSize=10 dl2.TextStrokeTransparency=0.3 dl2.TextXAlignment=Enum.TextXAlignment.Left dl2.Parent=bg
                         local sb=Instance.new("Frame") sb.Name="SB" sb.Size=UDim2.new(0,3,1,-8) sb.Position=UDim2.new(0,0,0,4) sb.BorderSizePixel=0 sb.Parent=bg corner(sb,2)
                     end
-                    local color=role=="murderer" and T.Murd or role=="sheriff" and T.Sher or isDead and T.Faint or T.Inno
                     local roleText=role=="murderer" and "🔪 KATİL" or role=="sheriff" and "🔫 ŞERİF" or isDead and "💀 ÖLÜ" or "👤 MASUM"
                     local bg=bb:FindFirstChild("BG")
                     if bg then
-                        local nl2=bg:FindFirstChild("NL") local rl2=bg:FindFirstChild("RL") local dl2=bg:FindFirstChild("DL") local sb=bg:FindFirstChild("SB")
+                        local nl2=bg:FindFirstChild("NL") local rl2=bg:FindFirstChild("RL") local hl2=bg:FindFirstChild("HL") local dl2=bg:FindFirstChild("DL") local sb=bg:FindFirstChild("SB")
                         if nl2 then nl2.Text=p.Name nl2.TextColor3=color end
                         if rl2 then rl2.Text=roleText rl2.TextColor3=color end
                         if sb then sb.BackgroundColor3=color end
+                        if hl2 and espHealth:get() and pHum then
+                            hl2.Text="❤️ "..math.floor(pHum.Health).."/"..math.floor(pHum.MaxHealth)
+                            hl2.TextColor3=pHum.Health>50 and T.Good or pHum.Health>25 and T.Warn or T.Bad
+                        elseif hl2 then hl2.Text="" end
                         if dl2 and espDist:get() then
-                            local myR=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if myR then
-                                local dist=math.floor((pRoot.Position-myR.Position).Magnitude)
-                                dl2.Text="📏 "..dist.." studs" dl2.TextColor3=dist<20 and T.Bad or dist<50 and T.Warn or T.Dim
-                            end
+                            local myR=char:FindFirstChild("HumanoidRootPart")
+                            if myR then local d=math.floor((pRoot.Position-myR.Position).Magnitude) dl2.Text="📏 "..d.." st" dl2.TextColor3=d<20 and T.Bad or d<50 and T.Warn or T.Dim end
                         elseif dl2 then dl2.Text="" end
                     end
                 else
                     if bb then bb:Destroy() end
                 end
 
+                -- Chams
                 if espChams:get() then
                     for _,part in pairs(p.Character:GetDescendants()) do
                         if part:IsA("BasePart") and not part:FindFirstChild("_chams") then
-                            local sel=Instance.new("SelectionBox") sel.Name="_chams" sel.Adornee=part
-                            local col=role=="murderer" and T.Murd or role=="sheriff" and T.Sher or T.Inno
-                            sel.Color3=col sel.SurfaceColor3=col sel.SurfaceTransparency=0.7 sel.LineThickness=0.04 sel.Parent=part
+                            local sel=Instance.new("SelectionBox") sel.Name="_chams" sel.Adornee=part sel.Color3=color sel.SurfaceColor3=color sel.SurfaceTransparency=0.7 sel.LineThickness=0.04 sel.Parent=part
                         end
                     end
                 else
-                    for _,part in pairs(p.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then local s=part:FindFirstChild("_chams") if s then s:Destroy() end end
+                    for _,part in pairs(p.Character:GetDescendants()) do if part:IsA("BasePart") then local s=part:FindFirstChild("_chams") if s then s:Destroy() end end end
+                end
+
+                -- Tracer
+                if espTracer:get() then
+                    local sp,onScreen=Camera:WorldToViewportPoint(pRoot.Position)
+                    if onScreen then
+                        local line=tracerLines[p.Name]
+                        if not line then
+                            line=Instance.new("Frame") line.BorderSizePixel=0 line.AnchorPoint=Vector2.new(0.5,0) line.ZIndex=1 line.Parent=TracerGui
+                            tracerLines[p.Name]=line
+                        end
+                        line.Visible=true line.BackgroundColor3=color
+                        local screenBottom=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y)
+                        local target=Vector2.new(sp.X,sp.Y)
+                        local dist=(target-screenBottom).Magnitude
+                        local angle=math.atan2(target.Y-screenBottom.Y,target.X-screenBottom.X)
+                        line.Size=UDim2.new(0,2,0,dist)
+                        line.Position=UDim2.new(0,screenBottom.X,0,screenBottom.Y)
+                        line.Rotation=math.deg(angle)-90
                     end
                 end
             end
@@ -692,18 +771,25 @@ RunService.Heartbeat:Connect(function(dt)
         local myTN=myTool and myTool.Name:lower() or ""
         local hasGun=myTN:find("gun") or myTN:find("sheriff") or myTN:find("revolver")
         if hasGun and detectedMurderer then
-            local murdChar=Players:FindFirstChild(detectedMurderer) and Players:FindFirstChild(detectedMurderer).Character
-            if murdChar then
-                local murdRoot=murdChar:FindFirstChild("HumanoidRootPart") or murdChar:FindFirstChild("UpperTorso")
-                if murdRoot then
-                    local screenPos,onScreen=Camera:WorldToViewportPoint(murdRoot.Position)
+            local mc=Players:FindFirstChild(detectedMurderer) and Players:FindFirstChild(detectedMurderer).Character
+            if mc then
+                local mr=mc:FindFirstChild("HumanoidRootPart") or mc:FindFirstChild("UpperTorso")
+                if mr then
+                    local sp,onScreen=Camera:WorldToViewportPoint(mr.Position)
                     if onScreen then
                         local center=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
-                        local diff=Vector2.new(screenPos.X,screenPos.Y)-center
+                        local diff=Vector2.new(sp.X,sp.Y)-center
                         if diff.Magnitude<=aimFOV.get() then
-                            local targetCF=CFrame.lookAt(Camera.CFrame.Position,murdRoot.Position)
-                            Camera.CFrame=Camera.CFrame:Lerp(targetCF,dt*aimSmooth.get())
-                            if autoShoot:get() then pcall(function() mouse1press() task.delay(0.1,mouse1release) end) end
+                            local canSee=true
+                            if aimWall:get() then
+                                local rp=RaycastParams.new() rp.FilterDescendantsInstances={char} rp.FilterType=Enum.RaycastFilterType.Exclude
+                                local res=workspace:Raycast(Camera.CFrame.Position,(mr.Position-Camera.CFrame.Position),rp)
+                                if res and res.Instance and not res.Instance:IsDescendantOf(mc) then canSee=false end
+                            end
+                            if canSee then
+                                Camera.CFrame=Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position,mr.Position),dt*aimSmooth.get())
+                                if autoShoot:get() then pcall(function() mouse1press() task.delay(0.1,mouse1release) end) end
+                            end
                         end
                     end
                 end
@@ -715,15 +801,15 @@ RunService.Heartbeat:Connect(function(dt)
     if FOVFrame.Visible then local fov=aimFOV.get()*2 FOVFrame.Size=UDim2.new(0,fov,0,fov) FOVFrame.Position=UDim2.new(0.5,-fov/2,0.5,-fov/2) end
 
     if autoCoin:get() then
-        local myRoot2=char:FindFirstChild("HumanoidRootPart")
-        if myRoot2 then
-            local closest2,closestDist2=nil,35
+        local mr=char:FindFirstChild("HumanoidRootPart")
+        if mr then
+            local closest,cd=nil,35
             for _,obj in pairs(workspace:GetDescendants()) do
                 if obj:IsA("BasePart") and (obj.Name:lower():find("coin") or obj.Name:lower():find("gold")) then
-                    local dist=(obj.Position-myRoot2.Position).Magnitude if dist<closestDist2 then closest2=obj closestDist2=dist end
+                    local d=(obj.Position-mr.Position).Magnitude if d<cd then closest=obj cd=d end
                 end
             end
-            if closest2 then myRoot2.CFrame=CFrame.new(closest2.Position+Vector3.new(0,3,0)) end
+            if closest then mr.CFrame=CFrame.new(closest.Position+Vector3.new(0,3,0)) end
         end
     end
 
@@ -731,8 +817,8 @@ RunService.Heartbeat:Connect(function(dt)
     RadarFrame.Visible=radarTog:get()
     if radarTog:get() then
         for name,data in pairs(radarDots) do data.dot.Visible=false end
-        local myRoot=char:FindFirstChild("HumanoidRootPart")
-        if myRoot then
+        local mr=char:FindFirstChild("HumanoidRootPart")
+        if mr then
             for _,p in pairs(Players:GetPlayers()) do
                 if p~=LocalPlayer and p.Character then
                     local pRoot=p.Character:FindFirstChild("HumanoidRootPart")
@@ -741,7 +827,7 @@ RunService.Heartbeat:Connect(function(dt)
                         if nx and ny then
                             local role=getPlayerRole(p)
                             local col=role=="murderer" and T.Murd or role=="sheriff" and T.Sher or T.Inno
-                            local dot=getOrCreateDot(p.Name)
+                            local dot=getDot(p.Name)
                             dot.dot.Visible=true dot.dot.Position=UDim2.new(nx,-5,ny,-5) dot.dot.BackgroundColor3=col
                             dot.txt.Text=p.Name:sub(1,6) dot.txt.TextColor3=col
                         end
@@ -761,10 +847,11 @@ end)
 
 _G.__MM2_Destroy=function()
     pcall(function() GUI:Destroy() end) pcall(function() NotifyGui:Destroy() end)
-    pcall(function() FOVGUI:Destroy() end) pcall(function() RadarGui:Destroy() end)
+    pcall(function() TracerGui:Destroy() end) pcall(function() RadarGui:Destroy() end)
+    pcall(function() WM:Destroy() end)
     if fakeWeapons.active then pcall(function() fakeWeapons.active:Destroy() end) end
     flyCallback(false)
 end
 
-setStatus("MM2 Ultimate yüklendi ✓","ok")
-notify("MM2 Ultimate","INSERT aç/kapat · DELETE panic · Radar sağ altta!","success",6)
+setStatus("MM2 Ultimate v2 yüklendi ✓","ok")
+notify("MM2 Ultimate v2","INSERT menü · DELETE panic · END watermark · Hazır!","success",7)
